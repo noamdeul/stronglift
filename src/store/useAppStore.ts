@@ -201,7 +201,15 @@ export const useAppStore = create<Store>()(
           if (ei !== exerciseIndex) return ex;
           const key = isWarmup ? 'warmupSets' : 'workSets';
           const sets = ex[key].map((s, si) =>
-            si === setIndex ? { ...s, done: !s.done } : s,
+            si === setIndex
+              ? {
+                  ...s,
+                  done: !s.done,
+                  // Stamp the real completion time when flipping to done; clear
+                  // it when flipping back, so the Garmin export reflects reality.
+                  completedAt: !s.done ? new Date().toISOString() : undefined,
+                }
+              : s,
           );
           return { ...ex, [key]: sets };
         });
@@ -216,7 +224,16 @@ export const useAppStore = create<Store>()(
           if (ei !== exerciseIndex) return ex;
           const key = isWarmup ? 'warmupSets' : 'workSets';
           const sets = ex[key].map((s, si) =>
-            si === setIndex ? { ...s, reps: clamped, done: true } : s,
+            si === setIndex
+              ? {
+                  ...s,
+                  reps: clamped,
+                  done: true,
+                  // Keep the original completion time if the set was already
+                  // done; only stamp it when this action first marks it done.
+                  completedAt: s.completedAt ?? new Date().toISOString(),
+                }
+              : s,
           );
           return { ...ex, [key]: sets };
         });
@@ -342,7 +359,9 @@ export const useAppStore = create<Store>()(
       storage: guardedStorage,
       partialize: (s) => ({ ...pickAppState(s as Store), lastBackupAt: (s as Store).lastBackupAt }),
       migrate: (persisted, version) => {
-        // No migrations yet; future schema bumps handle older `version`s here.
+        // v1 -> v2 added the optional `completedAt` on LoggedSet; old data is
+        // valid as-is (sets simply lack it and the export synthesizes timing).
+        // Future shape-changing bumps add their handling here.
         if (version < SCHEMA_VERSION) {
           return persisted as AppState;
         }

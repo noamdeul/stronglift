@@ -27,6 +27,10 @@ export interface LoggedSet {
   /** Weight for this set. Set on warmup sets, which ramp; work sets use the
    * parent LoggedExercise weight, so this is omitted there. */
   weight?: number;
+  /** ISO wall-clock time this set was marked done. Stamped when the set flips
+   * to done and cleared when it flips back; absent on sessions logged before
+   * set-timing was added. Used to give the Garmin (.FIT) export real timing. */
+  completedAt?: string;
 }
 
 export interface LoggedExercise {

@@ -2,7 +2,10 @@ import { ALL_EXERCISE_IDS } from './exercises';
 import type { AppState, ExerciseId, ExerciseState, Settings, Unit } from './types';
 import { BAR_WEIGHT, DEFAULT_ROUNDING } from './units';
 
-export const SCHEMA_VERSION = 1;
+// v2 added the optional `completedAt` timestamp to LoggedSet (for the Garmin
+// .FIT export). It is optional, so v1 data is valid v2 data — see the store's
+// `migrate` passthrough.
+export const SCHEMA_VERSION = 2;
 
 /** Default per-exercise weight increments, per unit. */
 const INCREMENTS: Record<Unit, Record<ExerciseId, number>> = {

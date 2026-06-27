@@ -100,6 +100,14 @@ describe('setReps', () => {
     useAppStore.getState().setReps(0, 1, false, -5);
     expect(useAppStore.getState().currentSession!.exercises[0].workSets[1].reps).toBe(0);
   });
+
+  it('stamps a completion time, preserved across later rep edits', () => {
+    useAppStore.getState().setReps(0, 0, false, 5);
+    const first = useAppStore.getState().currentSession!.exercises[0].workSets[0].completedAt;
+    expect(first).toBeTruthy();
+    useAppStore.getState().setReps(0, 0, false, 4);
+    expect(useAppStore.getState().currentSession!.exercises[0].workSets[0].completedAt).toBe(first);
+  });
 });
 
 describe('toggleSet', () => {
@@ -110,6 +118,14 @@ describe('toggleSet', () => {
     expect(useAppStore.getState().currentSession!.exercises[0].workSets[0].done).toBe(true);
     useAppStore.getState().toggleSet(0, 0, false);
     expect(useAppStore.getState().currentSession!.exercises[0].workSets[0].done).toBe(false);
+  });
+
+  it('stamps completedAt when marking done and clears it when undone', () => {
+    useAppStore.getState().startWorkout();
+    useAppStore.getState().toggleSet(0, 0, false);
+    expect(useAppStore.getState().currentSession!.exercises[0].workSets[0].completedAt).toBeTruthy();
+    useAppStore.getState().toggleSet(0, 0, false);
+    expect(useAppStore.getState().currentSession!.exercises[0].workSets[0].completedAt).toBeUndefined();
   });
 });
 

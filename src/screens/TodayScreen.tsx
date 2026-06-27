@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShareButton } from '../components/ShareButton';
+import { GarminExportButton } from '../components/GarminExportButton';
 import { EXERCISES } from '../domain/exercises';
 import { isExerciseSucceeded } from '../domain/progression';
 import { formatWeight } from '../domain/units';
@@ -81,6 +82,8 @@ export function TodayScreen() {
             className="btn btn-primary"
             label="📤 Share workout image"
           />
+          <div className="spacer" />
+          <GarminExportButton session={lastFinished} />
           <div className="spacer" />
           <button className="btn" onClick={dismissFinished}>
             Done
