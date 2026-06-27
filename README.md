@@ -1,4 +1,4 @@
-# StrongLifts 5×5 Tracker
+# FiveByFive
 
 A client-side-only, mobile-first web app for logging StrongLifts 5×5 barbell
 workouts. No backend, no account — all data lives in your browser

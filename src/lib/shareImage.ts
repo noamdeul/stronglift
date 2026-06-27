@@ -69,7 +69,7 @@ function drawHeader(ctx: CanvasRenderingContext2D, model: ShareModel): void {
 
   ctx.fillStyle = C.accent;
   ctx.font = `700 34px ${FONT}`;
-  ctx.fillText('STRONGLIFTS 5×5', PAD, 92);
+  ctx.fillText('FIVEBYFIVE', PAD, 92);
 
   ctx.fillStyle = C.text;
   ctx.font = `800 84px ${FONT}`;
@@ -158,7 +158,7 @@ function drawFooter(
   ctx.fillStyle = C.dim;
   ctx.font = `400 30px ${FONT}`;
   ctx.textAlign = 'right';
-  ctx.fillText('Tracked with StrongLifts 5×5', W - PAD, y + FOOTER_H / 2);
+  ctx.fillText('Tracked with FiveByFive', W - PAD, y + FOOTER_H / 2);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 }

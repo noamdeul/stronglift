@@ -4,7 +4,7 @@ Guidance for AI assistants working in this repository.
 
 ## What this is
 
-**StrongLifts 5×5 Tracker** — a client-side-only, mobile-first PWA for logging
+**FiveByFive** — a client-side-only, mobile-first PWA for logging
 StrongLifts 5×5 barbell workouts. There is **no backend and no account**: all
 state lives in the browser's `localStorage`. The app is installable and fully
 usable offline, and is deployed as a GitHub Pages project site.

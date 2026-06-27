@@ -14,8 +14,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'StrongLifts 5x5',
-        short_name: 'StrongLifts',
+        name: 'FiveByFive',
+        short_name: 'FiveByFive',
         description: 'Track your 5x5 barbell workouts. Offline-first, no account needed.',
         theme_color: '#0f172a',
         background_color: '#0f172a',
