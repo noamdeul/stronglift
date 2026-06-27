@@ -15,6 +15,10 @@ export function ExerciseCard({ exercise, exerciseIndex, settings }: Props) {
   const toggleSet = useAppStore((s) => s.toggleSet);
   const setReps = useAppStore((s) => s.setReps);
   const startRest = useAppStore((s) => s.startRest);
+  const setWarmupWeight = useAppStore((s) => s.setWarmupWeight);
+  const setWarmupReps = useAppStore((s) => s.setWarmupReps);
+  const addWarmupSet = useAppStore((s) => s.addWarmupSet);
+  const removeWarmupSet = useAppStore((s) => s.removeWarmupSet);
 
   const def = EXERCISES[exercise.exerciseId];
 
@@ -50,7 +54,12 @@ export function ExerciseCard({ exercise, exerciseIndex, settings }: Props) {
       <WarmupSets
         sets={exercise.warmupSets}
         unit={settings.unit}
+        rounding={settings.rounding}
         onToggle={(i) => toggleSet(exerciseIndex, i, true)}
+        onWeightChange={(i, w) => setWarmupWeight(exerciseIndex, i, w)}
+        onRepsChange={(i, r) => setWarmupReps(exerciseIndex, i, r)}
+        onAdd={() => addWarmupSet(exerciseIndex)}
+        onRemove={(i) => removeWarmupSet(exerciseIndex, i)}
       />
 
       <div className="section-label">Work sets</div>

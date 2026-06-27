@@ -4,13 +4,15 @@ import { ALL_EXERCISE_IDS, WORKOUT_TEMPLATES } from '../domain/exercises';
 import { computeNextState, resultFromLogged } from '../domain/progression';
 import { buildSessionFromTemplate, flipWorkoutType } from '../domain/session';
 import { defaultAppState, defaultSettings, SCHEMA_VERSION } from '../domain/defaults';
-import { DEFAULT_ROUNDING, convertWeight } from '../domain/units';
+import { BAR_WEIGHT, DEFAULT_ROUNDING, convertWeight } from '../domain/units';
 import type {
   AppState,
   ExerciseId,
   ExerciseState,
+  LoggedSet,
   Settings,
   Unit,
+  WorkoutSession,
 } from '../domain/types';
 
 export type Tab = 'today' | 'history' | 'settings';
@@ -35,6 +37,12 @@ interface Store extends AppState {
   toggleSet: (exerciseIndex: number, setIndex: number, isWarmup: boolean) => void;
   setReps: (exerciseIndex: number, setIndex: number, isWarmup: boolean, reps: number) => void;
 
+  // Warmup customization (per in-progress session).
+  setWarmupWeight: (exerciseIndex: number, setIndex: number, weight: number) => void;
+  setWarmupReps: (exerciseIndex: number, setIndex: number, reps: number) => void;
+  addWarmupSet: (exerciseIndex: number) => void;
+  removeWarmupSet: (exerciseIndex: number, setIndex: number) => void;
+
   // Rest timer.
   startRest: (seconds: number) => void;
   stopRest: () => void;
@@ -55,6 +63,18 @@ function newId(): string {
     return crypto.randomUUID();
   }
   return `id-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+}
+
+/** Apply an update to one exercise's warmup sets within a session. */
+function mapWarmupSets(
+  session: WorkoutSession,
+  exerciseIndex: number,
+  update: (sets: LoggedSet[]) => LoggedSet[],
+): WorkoutSession {
+  const exercises = session.exercises.map((ex, ei) =>
+    ei === exerciseIndex ? { ...ex, warmupSets: update(ex.warmupSets) } : ex,
+  );
+  return { ...session, exercises };
 }
 
 /** Extract only the persisted AppState slice from the full store. */
@@ -142,6 +162,44 @@ export const useAppStore = create<Store>()(
           return { ...ex, [key]: sets };
         });
         set({ currentSession: { ...currentSession, exercises } });
+      },
+
+      setWarmupWeight: (exerciseIndex, setIndex, weight) => {
+        const { currentSession } = get();
+        if (!currentSession || !Number.isFinite(weight) || weight < 0) return;
+        set({ currentSession: mapWarmupSets(currentSession, exerciseIndex, (sets) =>
+          sets.map((s, si) => (si === setIndex ? { ...s, weight } : s)),
+        ) });
+      },
+
+      setWarmupReps: (exerciseIndex, setIndex, reps) => {
+        const { currentSession } = get();
+        if (!currentSession) return;
+        const clamped = Math.max(0, Math.min(20, Math.round(reps)));
+        set({ currentSession: mapWarmupSets(currentSession, exerciseIndex, (sets) =>
+          sets.map((s, si) =>
+            si === setIndex ? { ...s, reps: clamped, targetReps: clamped } : s,
+          ),
+        ) });
+      },
+
+      addWarmupSet: (exerciseIndex) => {
+        const { currentSession, settings } = get();
+        if (!currentSession) return;
+        set({ currentSession: mapWarmupSets(currentSession, exerciseIndex, (sets) => {
+          const last = sets[sets.length - 1];
+          const weight = last?.weight ?? BAR_WEIGHT[settings.unit];
+          const reps = last?.reps ?? 5;
+          return [...sets, { reps, targetReps: reps, done: false, isWarmup: true, weight }];
+        }) });
+      },
+
+      removeWarmupSet: (exerciseIndex, setIndex) => {
+        const { currentSession } = get();
+        if (!currentSession) return;
+        set({ currentSession: mapWarmupSets(currentSession, exerciseIndex, (sets) =>
+          sets.filter((_, si) => si !== setIndex),
+        ) });
       },
 
       startRest: (seconds) =>

@@ -187,6 +187,18 @@ select {
 .warmups {
   margin: 10px 0 4px;
 }
+.warmup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 8px;
+}
+.link-btn {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 2px 4px;
+}
 .warmup-row {
   display: flex;
   align-items: center;
@@ -198,6 +210,67 @@ select {
 .warmup-row .w {
   width: 78px;
   font-variant-numeric: tabular-nums;
+}
+
+/* Editable warmup rows */
+.warmup-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  flex-wrap: wrap;
+}
+.rm-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  color: var(--danger);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2px;
+  background: var(--bg);
+}
+.stepper button {
+  width: 32px;
+  height: 34px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent);
+  border-radius: 8px;
+}
+.stepper input {
+  width: 52px;
+  text-align: center;
+  border: none;
+  background: transparent;
+  padding: 6px 0;
+  -moz-appearance: textfield;
+}
+.stepper input::-webkit-outer-spin-button,
+.stepper input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.stepper .unit {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  padding: 0 2px;
+}
+.add-warmup {
+  margin-top: 10px;
+  padding: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  border-style: dashed;
 }
 
 .section-label {
