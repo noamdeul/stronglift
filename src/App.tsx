@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BackupReminder } from './components/BackupReminder';
 import { BottomNav } from './components/BottomNav';
 import { RestTimerBar } from './components/RestTimerBar';
+import { StorageWarning } from './components/StorageWarning';
 import { usePwaUpdate } from './hooks/usePwaUpdate';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
@@ -21,6 +22,8 @@ export default function App() {
       <RestTimerBar />
 
       <BackupReminder />
+
+      <StorageWarning />
 
       {needRefresh && (
         <div className="update-toast">

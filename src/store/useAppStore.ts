@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { ALL_EXERCISE_IDS, WORKOUT_TEMPLATES } from '../domain/exercises';
 import { computeNextState, resultFromLogged } from '../domain/progression';
 import { buildSessionFromTemplate, flipWorkoutType } from '../domain/session';
@@ -32,6 +32,9 @@ interface Store extends AppState {
   /** ISO timestamp of the last backup export on this device, or null. Persisted
    * device metadata — intentionally not part of AppState / the export payload. */
   lastBackupAt: string | null;
+  /** True when a persist write failed because localStorage is full. The latest
+   * changes are in memory but were not saved. Cleared on the next good write. */
+  persistError: boolean;
 
   // Session lifecycle.
   startWorkout: () => void;
@@ -62,9 +65,50 @@ interface Store extends AppState {
   exportData: () => AppState;
   /** Stamp the current time as the last successful backup. */
   markBackedUp: () => void;
+  /** Dismiss the storage-full warning for this session. */
+  dismissPersistError: () => void;
 }
 
 const PERSIST_KEY = 'fivebyfive-v1';
+
+/** True for the various browser names/codes used for a storage-quota overflow. */
+function isQuotaError(e: unknown): boolean {
+  return (
+    e instanceof DOMException &&
+    (e.name === 'QuotaExceededError' ||
+      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      e.code === 22)
+  );
+}
+
+/**
+ * localStorage-backed JSON storage that turns a quota overflow into a visible
+ * `persistError` flag instead of an unhandled throw that would silently drop
+ * the just-made changes. A subsequent successful write clears the flag.
+ */
+const guardedStorage = createJSONStorage(() => {
+  if (typeof localStorage === 'undefined') {
+    return undefined as unknown as Storage;
+  }
+  return {
+    getItem: (name) => localStorage.getItem(name),
+    setItem: (name, value) => {
+      try {
+        localStorage.setItem(name, value);
+        if (useAppStore.getState().persistError) {
+          useAppStore.setState({ persistError: false });
+        }
+      } catch (e) {
+        if (isQuotaError(e)) {
+          useAppStore.setState({ persistError: true });
+        } else {
+          throw e;
+        }
+      }
+    },
+    removeItem: (name) => localStorage.removeItem(name),
+  };
+});
 
 function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -104,6 +148,7 @@ export const useAppStore = create<Store>()(
       rest: { endsAt: null, durationSec: 0 },
       lastFinished: null,
       lastBackupAt: null,
+      persistError: false,
 
       startWorkout: () => {
         const { nextWorkoutType, exerciseStates, settings, currentSession } = get();
@@ -288,10 +333,13 @@ export const useAppStore = create<Store>()(
       exportData: () => pickAppState(get()),
 
       markBackedUp: () => set({ lastBackupAt: new Date().toISOString() }),
+
+      dismissPersistError: () => set({ persistError: false }),
     }),
     {
       name: PERSIST_KEY,
       version: SCHEMA_VERSION,
+      storage: guardedStorage,
       partialize: (s) => ({ ...pickAppState(s as Store), lastBackupAt: (s as Store).lastBackupAt }),
       migrate: (persisted, version) => {
         // No migrations yet; future schema bumps handle older `version`s here.

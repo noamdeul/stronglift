@@ -527,6 +527,30 @@ select {
   text-decoration: underline;
 }
 
+.storage-warning {
+  position: fixed;
+  /* Stack above the backup banner so multiple notices never overlap. */
+  bottom: calc(var(--nav-h) + 128px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(var(--max-w) - 32px);
+  width: max-content;
+  background: var(--danger);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.9rem;
+  z-index: 41;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+.storage-warning button {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
 .empty {
   text-align: center;
   color: var(--text-dim);
