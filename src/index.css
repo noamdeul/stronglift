@@ -199,17 +199,20 @@ select {
   font-weight: 600;
   padding: 2px 4px;
 }
-.warmup-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  font-size: 0.9rem;
-  color: var(--text-dim);
+/* Warmup circles mirror the work-set rep buttons, with the weight below and a
+   distinct (blue) "done" colour so they don't read as work sets. */
+.warmup-grid {
+  margin-bottom: 22px;
 }
-.warmup-row .w {
-  width: 78px;
-  font-variant-numeric: tabular-nums;
+.set-cell.warmup {
+  width: 46px;
+  height: 46px;
+  font-size: 1rem;
+}
+.set-cell.warmup.done {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 /* Editable warmup rows */

@@ -38,8 +38,26 @@ export function WarmupSets({
 
       {sets.length === 0 && !editing && <div className="muted">No warmup sets</div>}
 
-      {sets.map((s, i) =>
-        editing ? (
+      {!editing && sets.length > 0 && (
+        <div className="set-grid warmup-grid">
+          {sets.map((s, i) => (
+            <button
+              key={i}
+              className={`set-cell warmup ${s.done ? 'done' : ''}`}
+              onClick={() => onToggle(i)}
+              aria-label={`Warmup ${i + 1}: ${formatWeight(s.weight ?? 0, unit)} × ${s.reps}${
+                s.done ? ', done' : ''
+              }`}
+            >
+              {s.reps}
+              <span className="hint">{formatWeight(s.weight ?? 0, unit)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {editing &&
+        sets.map((s, i) => (
           <div key={i} className="warmup-edit">
             <button
               className="rm-btn"
@@ -73,14 +91,7 @@ export function WarmupSets({
               <button onClick={() => onRepsChange(i, s.reps + 1)}>+</button>
             </div>
           </div>
-        ) : (
-          <button key={i} className="warmup-row" onClick={() => onToggle(i)}>
-            <span style={{ fontSize: '1.1rem' }}>{s.done ? '✅' : '⬜️'}</span>
-            <span className="w">{formatWeight(s.weight ?? 0, unit)}</span>
-            <span>× {s.reps}</span>
-          </button>
-        ),
-      )}
+        ))}
 
       {editing && (
         <button className="btn add-warmup" onClick={onAdd}>
