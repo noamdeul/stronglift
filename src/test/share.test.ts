@@ -83,6 +83,6 @@ describe('buildShareModel', () => {
 
   it('builds a stable, locale-independent filename from the ISO date', () => {
     const model = buildShareModel(session());
-    expect(model.fileName).toBe('stronglifts-workout-A-2026-06-27.png');
+    expect(model.fileName).toBe('fivebyfive-workout-A-2026-06-27.png');
   });
 });

@@ -76,6 +76,6 @@ export function buildShareModel(session: WorkoutSession): ShareModel {
     exercises,
     summaryText: `${okCount}/${total} exercises completed`,
     allSucceeded: total > 0 && okCount === total,
-    fileName: `stronglifts-workout-${session.type}-${isoDay}.png`,
+    fileName: `fivebyfive-workout-${session.type}-${isoDay}.png`,
   };
 }

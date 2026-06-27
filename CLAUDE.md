@@ -5,7 +5,7 @@ Guidance for AI assistants working in this repository.
 ## What this is
 
 **FiveByFive** — a client-side-only, mobile-first PWA for logging
-StrongLifts 5×5 barbell workouts. There is **no backend and no account**: all
+FiveByFive 5×5 barbell workouts. There is **no backend and no account**: all
 state lives in the browser's `localStorage`. The app is installable and fully
 usable offline, and is deployed as a GitHub Pages project site.
 
@@ -49,7 +49,7 @@ src/
     types.ts        All shared TypeScript types (the data model)
     exercises.ts    Exercise definitions + A/B workout templates
     units.ts        kg/lb conversion, rounding, bar/plate constants, formatting
-    warmups.ts      StrongLifts warmup-set generation
+    warmups.ts      FiveByFive warmup-set generation
     progression.ts  The progression/deload engine (success → +weight, fail×3 → deload)
     session.ts      Build a fresh session from templates; derive results
     defaults.ts     Default settings, starting weights, SCHEMA_VERSION
@@ -124,7 +124,7 @@ a loadable plate increment and avoid floating-point fuzz.
 
 ## Persistence & schema migrations
 
-- Persisted under the `localStorage` key `stronglift-v1`
+- Persisted under the `localStorage` key `fivebyfive-v1`
   (`PERSIST_KEY` in the store), versioned by `SCHEMA_VERSION` in
   `domain/defaults.ts` (currently `1`).
 - `partialize` persists only the `AppState` slice — transient state (the rest
@@ -137,7 +137,7 @@ a loadable plate increment and avoid floating-point fuzz.
 
 ## PWA & deployment
 
-- The app is served from the base path **`/stronglift/`** (set as `base` in
+- The app is served from the base path **`/fivebyfive/`** (set as `base` in
   `vite.config.ts` and reflected in `index.html` asset URLs). If the repo is
   forked/renamed, `base` must be updated to match.
 - Service worker uses `registerType: 'autoUpdate'`; `usePwaUpdate` surfaces a

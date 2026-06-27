@@ -3,8 +3,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// Hosted as a GitHub Pages project site at /stronglift/.
-const BASE = '/stronglift/';
+// Hosted as a GitHub Pages project site at /fivebyfive/.
+const BASE = '/fivebyfive/';
 
 export default defineConfig({
   base: BASE,

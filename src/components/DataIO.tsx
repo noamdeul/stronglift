@@ -15,7 +15,7 @@ export function DataIO() {
     const a = document.createElement('a');
     a.href = url;
     const stamp = new Date().toISOString().slice(0, 10);
-    a.download = `stronglifts-backup-${stamp}.json`;
+    a.download = `fivebyfive-backup-${stamp}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -59,7 +59,7 @@ interface Store extends AppState {
   exportData: () => AppState;
 }
 
-const PERSIST_KEY = 'stronglift-v1';
+const PERSIST_KEY = 'fivebyfive-v1';
 
 function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {

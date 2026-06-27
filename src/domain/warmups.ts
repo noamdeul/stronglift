@@ -2,7 +2,7 @@ import type { LoggedSet, Unit } from './types';
 import { BAR_WEIGHT, roundToIncrement } from './units';
 
 /**
- * Generate StrongLifts-style warmup sets for a given working weight.
+ * Generate FiveByFive-style warmup sets for a given working weight.
  *
  * Scheme: two sets with the empty bar, then a short ramp up toward the working
  * weight. Warmups are only meaningful once the working weight is meaningfully

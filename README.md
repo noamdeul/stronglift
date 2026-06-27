@@ -1,6 +1,6 @@
 # FiveByFive
 
-A client-side-only, mobile-first web app for logging StrongLifts 5×5 barbell
+A client-side-only, mobile-first web app for logging FiveByFive 5×5 barbell
 workouts. No backend, no account — all data lives in your browser
 (`localStorage`). Installable as a PWA and fully usable offline.
 
@@ -44,7 +44,7 @@ Deployment is automated via `.github/workflows/deploy.yml`: every push to
 **One-time setup:** in the repo, go to **Settings → Pages → Build and
 deployment → Source** and select **GitHub Actions**.
 
-The app is served from the `/stronglift/` base path (configured in
+The app is served from the `/fivebyfive/` base path (configured in
 `vite.config.ts`). If you fork or rename the repo, update `base` to match the
 new repo name.
 
