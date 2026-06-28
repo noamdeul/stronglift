@@ -46,7 +46,9 @@ export function computePlatesPerSide(
     return { perSide: [], leftover: Math.max(0, -remaining) };
   }
   const perSide: number[] = [];
-  for (const plate of plates) {
+  // Sort largest-first so the greedy fill works regardless of input order.
+  for (const plate of [...plates].sort((a, b) => b - a)) {
+    if (plate <= 0) continue;
     while (remaining + 1e-9 >= plate) {
       perSide.push(plate);
       remaining -= plate;

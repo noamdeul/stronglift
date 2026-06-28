@@ -51,7 +51,10 @@ export function ExerciseCard({ exercise, exerciseIndex, settings }: Props) {
       </div>
       <div className="weight-big">{formatWeight(exercise.weight, settings.unit)}</div>
       <div className="plate-load">
-        {formatPlateLoad(computePlatesPerSide(exercise.weight, settings.unit), settings.unit)}
+        {formatPlateLoad(
+          computePlatesPerSide(exercise.weight, settings.unit, settings.barWeight, settings.plates),
+          settings.unit,
+        )}
       </div>
 
       <WarmupSets

@@ -81,6 +81,18 @@ describe('units', () => {
       expect(load.leftover).toBe(0.5);
     });
 
+    it('honors a custom bar and plate set, regardless of plate order', () => {
+      // 70 lb on a 45 lb bar => 12.5 per side from a [10, 2.5] set (given unsorted).
+      const load = computePlatesPerSide(70, 'lb', 45, [2.5, 10, 5]);
+      expect(load.perSide).toEqual([10, 2.5]);
+      expect(load.leftover).toBe(0);
+    });
+
+    it('ignores non-positive plate sizes', () => {
+      const load = computePlatesPerSide(60, 'kg', 20, [20, 0, -5]);
+      expect(load.perSide).toEqual([20]);
+    });
+
     it('formats the per-side breakdown', () => {
       expect(formatPlateLoad(computePlatesPerSide(100, 'kg'), 'kg')).toBe('Bar + 25 + 15 / side');
       expect(formatPlateLoad(computePlatesPerSide(20, 'kg'), 'kg')).toBe('Bar only');

@@ -39,6 +39,25 @@ export function SettingsScreen() {
     }
   };
 
+  const [newPlate, setNewPlate] = useState('');
+
+  const setBarWeight = (value: number) => {
+    if (Number.isFinite(value) && value > 0) {
+      updateSettings({ barWeight: value });
+    }
+  };
+
+  const addPlate = () => {
+    const value = parseFloat(newPlate);
+    setNewPlate('');
+    if (!Number.isFinite(value) || value <= 0 || settings.plates.includes(value)) return;
+    updateSettings({ plates: [...settings.plates, value].sort((a, b) => b - a) });
+  };
+
+  const removePlate = (value: number) => {
+    updateSettings({ plates: settings.plates.filter((p) => p !== value) });
+  };
+
   return (
     <>
       <div className="screen-header">
@@ -92,6 +111,58 @@ export function SettingsScreen() {
               />
             </div>
           ))}
+        </div>
+
+        <div className="section-label">Bar &amp; plates ({settings.unit})</div>
+        <div className="card">
+          <div className="field">
+            <label>Bar weight</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              step={settings.rounding}
+              value={settings.barWeight}
+              onChange={(e) => setBarWeight(parseFloat(e.target.value))}
+            />
+          </div>
+          <div className="field" style={{ alignItems: 'flex-start' }}>
+            <label>Available plates</label>
+            <div className="plate-chips">
+              {settings.plates.length === 0 && <span className="muted">No plates</span>}
+              {[...settings.plates]
+                .sort((a, b) => b - a)
+                .map((p) => (
+                  <button
+                    key={p}
+                    className="plate-chip"
+                    onClick={() => removePlate(p)}
+                    aria-label={`Remove ${p} ${settings.unit} plate`}
+                  >
+                    {p} ✕
+                  </button>
+                ))}
+            </div>
+          </div>
+          <div className="plate-add">
+            <input
+              type="number"
+              inputMode="decimal"
+              step={settings.rounding}
+              placeholder="Plate size"
+              value={newPlate}
+              onChange={(e) => setNewPlate(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') addPlate();
+              }}
+            />
+            <button className="btn" onClick={addPlate}>
+              Add plate
+            </button>
+          </div>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            Tap a plate to remove it. Sizes are per single plate; the calculator loads them on
+            each side of the bar.
+          </p>
         </div>
 
         <div className="section-label">Rest timer (seconds)</div>

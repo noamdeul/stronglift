@@ -12,8 +12,8 @@ export function computeWarmups(
   workingWeight: number,
   unit: Unit,
   rounding: number,
+  bar: number = BAR_WEIGHT[unit],
 ): { weight: number; reps: number }[] {
-  const bar = BAR_WEIGHT[unit];
 
   if (workingWeight <= bar) {
     return [{ weight: bar, reps: 5 }];

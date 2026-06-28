@@ -259,4 +259,22 @@ describe('migratePersisted', () => {
     const migrated = migratePersisted(state, 3);
     expect(migrated.settings.sound).toBe(false);
   });
+
+  it('backfills barWeight and plates from the unit defaults for v3 state', () => {
+    const v3 = defaultAppState('lb') as AppState;
+    delete (v3.settings as Partial<AppState['settings']>).barWeight;
+    delete (v3.settings as Partial<AppState['settings']>).plates;
+    const migrated = migratePersisted(v3, 3);
+    expect(migrated.settings.barWeight).toBe(BAR_WEIGHT.lb);
+    expect(migrated.settings.plates).toEqual([45, 35, 25, 10, 5, 2.5]);
+  });
+
+  it('leaves an explicit bar and plate set untouched', () => {
+    const state = defaultAppState('kg') as AppState;
+    state.settings.barWeight = 15;
+    state.settings.plates = [20, 10];
+    const migrated = migratePersisted(state, 4);
+    expect(migrated.settings.barWeight).toBe(15);
+    expect(migrated.settings.plates).toEqual([20, 10]);
+  });
 });

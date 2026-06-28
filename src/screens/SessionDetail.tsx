@@ -23,11 +23,18 @@ function formatDateTime(iso: string): string {
 
 export function SessionDetail({ session, onBack }: Props) {
   const history = useAppStore((s) => s.history);
+  const settings = useAppStore((s) => s.settings);
   // History before this session, so a lift that ties/beats every earlier best
   // can be flagged as a PR.
   const index = history.findIndex((s) => s.id === session.id);
   const priorHistory = index >= 0 ? history.slice(0, index) : history;
   const priorBests = personalBests(priorHistory);
+
+  // Use the configured bar/plates only when they match the session's unit;
+  // otherwise fall back to the unit defaults baked into computePlatesPerSide.
+  const sameUnit = session.unit === settings.unit;
+  const bar = sameUnit ? settings.barWeight : undefined;
+  const plates = sameUnit ? settings.plates : undefined;
 
   return (
     <>
@@ -55,7 +62,10 @@ export function SessionDetail({ session, onBack }: Props) {
               </div>
               <div className="weight-big">{formatWeight(ex.weight, session.unit)}</div>
               <div className="plate-load">
-                {formatPlateLoad(computePlatesPerSide(ex.weight, session.unit), session.unit)}
+                {formatPlateLoad(
+                  computePlatesPerSide(ex.weight, session.unit, bar, plates),
+                  session.unit,
+                )}
               </div>
               {e1RM > 0 && (
                 <div className="muted" style={{ marginTop: 4 }}>

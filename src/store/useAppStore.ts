@@ -4,7 +4,7 @@ import { ALL_EXERCISE_IDS, WORKOUT_TEMPLATES } from '../domain/exercises';
 import { computeNextState, resultFromLogged } from '../domain/progression';
 import { buildSessionFromTemplate, flipWorkoutType } from '../domain/session';
 import { defaultAppState, defaultSettings, SCHEMA_VERSION } from '../domain/defaults';
-import { BAR_WEIGHT, DEFAULT_ROUNDING, convertWeight } from '../domain/units';
+import { BAR_WEIGHT, DEFAULT_ROUNDING, PLATE_SIZES, convertWeight } from '../domain/units';
 import type {
   AppState,
   ExerciseId,
@@ -146,11 +146,22 @@ function pickAppState(s: Store): AppState {
  *  - v1 -> v2 added the optional `completedAt` on LoggedSet; old data is valid
  *    as-is (sets simply lack it and the export synthesizes timing).
  *  - v2 -> v3 added `settings.sound`; default it on for older state.
+ *  - v3 -> v4 added `settings.barWeight`/`settings.plates`; backfill from the
+ *    unit defaults for older state.
  */
 export function migratePersisted(persisted: unknown, version: number): AppState {
   const state = persisted as AppState;
   if (version < 3 && state?.settings && state.settings.sound === undefined) {
     state.settings = { ...state.settings, sound: true };
+  }
+  if (version < 4 && state?.settings) {
+    const unit = state.settings.unit;
+    if (state.settings.barWeight === undefined) {
+      state.settings = { ...state.settings, barWeight: BAR_WEIGHT[unit] };
+    }
+    if (state.settings.plates === undefined) {
+      state.settings = { ...state.settings, plates: [...PLATE_SIZES[unit]] };
+    }
   }
   return state;
 }
@@ -332,7 +343,9 @@ export const useAppStore = create<Store>()(
               ...s.settings,
               unit,
               rounding,
-              // Adopt the unit's natural increments when switching units.
+              // Adopt the unit's natural bar, plates, and increments when switching.
+              barWeight: defaults.barWeight,
+              plates: defaults.plates,
               config: { ...s.settings.config, increments: defaults.config.increments },
             },
             exerciseStates,
@@ -343,7 +356,12 @@ export const useAppStore = create<Store>()(
         set({
           schemaVersion: SCHEMA_VERSION,
           // Backfill fields added in later schema versions for older backups.
-          settings: { ...state.settings, sound: state.settings.sound ?? true },
+          settings: {
+            ...state.settings,
+            sound: state.settings.sound ?? true,
+            barWeight: state.settings.barWeight ?? BAR_WEIGHT[state.settings.unit],
+            plates: state.settings.plates ?? [...PLATE_SIZES[state.settings.unit]],
+          },
           exerciseStates: state.exerciseStates,
           history: state.history,
           currentSession: state.currentSession,

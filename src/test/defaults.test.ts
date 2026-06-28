@@ -23,6 +23,8 @@ describe('defaultSettings', () => {
     expect(s.config.deloadFactor).toBe(0.1);
     expect(s.config.deloadFailThreshold).toBe(3);
     expect(s.sound).toBe(true);
+    expect(s.barWeight).toBe(BAR_WEIGHT.kg);
+    expect(s.plates).toEqual([25, 20, 15, 10, 5, 2.5, 1.25]);
   });
 
   it('uses lb increments and rounding for a lb setup', () => {
@@ -36,6 +38,8 @@ describe('defaultSettings', () => {
       ohp: 5,
       deadlift: 10,
     });
+    expect(s.barWeight).toBe(BAR_WEIGHT.lb);
+    expect(s.plates).toEqual([45, 35, 25, 10, 5, 2.5]);
   });
 });
 

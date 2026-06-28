@@ -32,7 +32,7 @@ function buildLoggedExercise(
 ): LoggedExercise {
   const def = EXERCISES[exerciseId];
   const weight = state.currentWeight;
-  const warmups = computeWarmups(weight, settings.unit, settings.rounding);
+  const warmups = computeWarmups(weight, settings.unit, settings.rounding, settings.barWeight);
   return {
     exerciseId,
     weight,

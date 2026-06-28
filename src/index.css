@@ -183,6 +183,33 @@ select {
   font-size: 0.8rem;
   margin-top: 2px;
 }
+.plate-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.plate-chip {
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.plate-add {
+  display: flex;
+  gap: 8px;
+  padding: 12px 0 4px;
+}
+.plate-add input {
+  flex: 1;
+  min-width: 0;
+}
+.plate-add .btn {
+  padding: 10px 16px;
+  width: auto;
+}
 
 .muted {
   color: var(--text-dim);
