@@ -1,55 +1,106 @@
 import { useEffect } from 'react';
+import { KEEP_AWAKE_MP4 } from './keepAwakeVideo';
 
 /**
- * Keeps the mobile screen awake while the app is open, using the Screen Wake
- * Lock API. Without this, phones dim and lock during a workout (e.g. while the
- * rest timer counts down between sets).
+ * Keeps the mobile screen awake while the app is open. Uses two mechanisms
+ * together, because no single one is reliable across phones:
  *
- * A wake lock is automatically released by the browser whenever the page
- * becomes hidden (backgrounded, screen turned off manually, tab switch), so we
- * re-acquire it on `visibilitychange` once the page is visible again.
+ *  1. The Screen Wake Lock API — the right tool on modern Android Chrome and
+ *     desktop. The browser releases the lock whenever the page is hidden, so
+ *     we re-acquire it on `visibilitychange` and on the sentinel's `release`.
  *
- * Gracefully no-ops where the API is unavailable (older browsers, insecure
- * contexts) or where the request is rejected (e.g. low battery).
+ *  2. A muted, looping, inline `<video>` that is actively playing. iOS — and
+ *     especially installed PWAs on iOS — does not honor the Wake Lock API
+ *     reliably, but it will not dim/lock the screen while a video plays. This
+ *     is the long-standing NoSleep.js technique. iOS may block autoplay until
+ *     the first user gesture, so we (re)start playback on the first
+ *     interaction and whenever the app becomes visible again.
  *
- * Pass `enabled: false` to release any held lock and stop re-acquiring it.
+ * Both are cheap and harmless where redundant. Pass `enabled: false` to stop
+ * everything and release any held lock.
  */
 export function useWakeLock(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
-    if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
+    if (typeof document === 'undefined') return;
 
+    // --- 1. Screen Wake Lock API ---
     let sentinel: WakeLockSentinel | null = null;
     let cancelled = false;
+    const supportsWakeLock = typeof navigator !== 'undefined' && 'wakeLock' in navigator;
 
     const acquire = async () => {
-      if (document.visibilityState !== 'visible') return;
+      if (!supportsWakeLock || sentinel || document.visibilityState !== 'visible') return;
       try {
         sentinel = await navigator.wakeLock.request('screen');
         if (cancelled) {
-          // Effect was cleaned up while the request was in flight.
           void sentinel.release();
           sentinel = null;
+          return;
         }
+        // The OS can drop the lock on its own; clear our handle so the next
+        // visibility/gesture event re-acquires it.
+        sentinel.addEventListener('release', () => {
+          sentinel = null;
+        });
       } catch {
-        // Request can reject (e.g. low battery, permissions); ignore.
+        // Rejected (e.g. low battery, not visible, unsupported); the video
+        // fallback below still covers us.
       }
     };
 
+    // --- 2. Looping muted inline video fallback (iOS) ---
+    const video = document.createElement('video');
+    video.muted = true;
+    video.defaultMuted = true;
+    video.loop = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.setAttribute('aria-hidden', 'true');
+    video.src = KEEP_AWAKE_MP4;
+    // Present but invisible and non-interactive.
+    Object.assign(video.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '1px',
+      height: '1px',
+      opacity: '0',
+      pointerEvents: 'none',
+    });
+    document.body.appendChild(video);
+
+    const playVideo = () => {
+      // Rejection (autoplay policy) is expected until a user gesture; ignore.
+      void video.play().catch(() => {});
+    };
+
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && sentinel == null) {
+      if (document.visibilityState === 'visible') {
         void acquire();
+        playVideo();
       }
     };
 
     void acquire();
+    playVideo();
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    // iOS gates autoplay behind a user gesture; (re)start on any interaction.
+    window.addEventListener('pointerdown', playVideo);
+    window.addEventListener('touchend', playVideo);
 
     return () => {
       cancelled = true;
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pointerdown', playVideo);
+      window.removeEventListener('touchend', playVideo);
       void sentinel?.release();
       sentinel = null;
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      video.remove();
     };
   }, [enabled]);
 }
