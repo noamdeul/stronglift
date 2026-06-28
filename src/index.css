@@ -197,6 +197,17 @@ select {
   border: 1px solid var(--border);
   color: var(--text);
 }
+/* Exercise picker chips (custom workout builder): left-aligned, with a clear
+   selected state. Reuses the .plate-chip pill shape. */
+.exercise-picker {
+  justify-content: flex-start;
+}
+.plate-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 .plate-add {
   display: flex;
   gap: 8px;

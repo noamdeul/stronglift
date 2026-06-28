@@ -1,6 +1,7 @@
-import { EXERCISES } from './exercises';
+import { getExercise } from './exercises';
 import { isExerciseSucceeded } from './progression';
-import type { WorkoutSession } from './types';
+import { sessionSlug, sessionTitle } from './session';
+import type { ExerciseDef, WorkoutSession } from './types';
 import { formatWeight } from './units';
 
 /** A single work set, reduced to what the share image needs to draw. */
@@ -44,11 +45,14 @@ function setView(reps: number, targetReps: number, done: boolean): ShareSetView 
  * image renderer can draw without touching the domain types. Pure and testable;
  * no canvas/DOM here.
  */
-export function buildShareModel(session: WorkoutSession): ShareModel {
+export function buildShareModel(
+  session: WorkoutSession,
+  customExercises: ExerciseDef[] = [],
+): ShareModel {
   const date = new Date(session.date);
 
   const exercises: ShareExerciseView[] = session.exercises.map((ex) => ({
-    name: EXERCISES[ex.exerciseId].name,
+    name: getExercise(ex.exerciseId, customExercises).name,
     weight: formatWeight(ex.weight, session.unit),
     sets: ex.workSets.map((s) => setView(s.reps, s.targetReps, s.done)),
     succeeded: isExerciseSucceeded(ex),
@@ -62,7 +66,7 @@ export function buildShareModel(session: WorkoutSession): ShareModel {
   const isoDay = session.date.slice(0, 10);
 
   return {
-    title: `Workout ${session.type}`,
+    title: sessionTitle(session),
     dateText: date.toLocaleDateString(undefined, {
       weekday: 'long',
       year: 'numeric',
@@ -76,6 +80,6 @@ export function buildShareModel(session: WorkoutSession): ShareModel {
     exercises,
     summaryText: `${okCount}/${total} exercises completed`,
     allSucceeded: total > 0 && okCount === total,
-    fileName: `fivebyfive-workout-${session.type}-${isoDay}.png`,
+    fileName: `fivebyfive-workout-${sessionSlug(session)}-${isoDay}.png`,
   };
 }

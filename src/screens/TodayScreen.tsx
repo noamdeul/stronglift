@@ -3,17 +3,23 @@ import { ExerciseCard } from '../components/ExerciseCard';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShareButton } from '../components/ShareButton';
 import { GarminExportButton } from '../components/GarminExportButton';
-import { EXERCISES } from '../domain/exercises';
+import { getExercise } from '../domain/exercises';
 import { isExerciseSucceeded } from '../domain/progression';
+import { sessionTitle } from '../domain/session';
 import { upcomingWorkouts } from '../domain/schedule';
 import { formatWeight } from '../domain/units';
-import type { WorkoutType } from '../domain/types';
+import type { CustomWorkout, ExerciseDef, WorkoutType } from '../domain/types';
 import { useAppStore } from '../store/useAppStore';
 
 const WORKOUT_SUMMARY: Record<WorkoutType, string> = {
   A: 'Squat · Bench Press · Barbell Row',
   B: 'Squat · Overhead Press · Deadlift',
 };
+
+/** Comma-separated exercise names for a custom workout's subtitle. */
+function customWorkoutSummary(workout: CustomWorkout, customExercises: ExerciseDef[]): string {
+  return workout.exercises.map((id) => getExercise(id, customExercises).name).join(' · ');
+}
 
 function formatDay(date: Date): string {
   return date.toLocaleDateString(undefined, {
@@ -46,7 +52,10 @@ export function TodayScreen() {
   const lastFinished = useAppStore((s) => s.lastFinished);
   const nextType = useAppStore((s) => s.nextWorkoutType);
   const settings = useAppStore((s) => s.settings);
+  const customExercises = useAppStore((s) => s.customExercises);
+  const customWorkouts = useAppStore((s) => s.customWorkouts);
   const startWorkout = useAppStore((s) => s.startWorkout);
+  const startCustomWorkout = useAppStore((s) => s.startCustomWorkout);
   const finishWorkout = useAppStore((s) => s.finishWorkout);
   const discardWorkout = useAppStore((s) => s.discardWorkout);
   const dismissFinished = useAppStore((s) => s.dismissFinished);
@@ -67,7 +76,7 @@ export function TodayScreen() {
         </div>
         <div className="screen">
           <div className="card" style={{ textAlign: 'center' }}>
-            <div className="muted">Workout {lastFinished.type}</div>
+            <div className="muted">{sessionTitle(lastFinished)}</div>
             <div style={{ fontSize: '2rem', fontWeight: 800, margin: '6px 0' }}>
               {okCount}/{total} exercises hit
             </div>
@@ -81,7 +90,7 @@ export function TodayScreen() {
               const ok = isExerciseSucceeded(ex);
               return (
                 <div key={ex.exerciseId} className="summary-row">
-                  <span>{EXERCISES[ex.exerciseId].name}</span>
+                  <span>{getExercise(ex.exerciseId, customExercises).name}</span>
                   <span className="muted">
                     {formatWeight(ex.weight, lastFinished.unit)} ·{' '}
                     {ex.workSets.map((s) => s.reps).join('/')}
@@ -144,6 +153,28 @@ export function TodayScreen() {
             })}
           </div>
 
+          {customWorkouts.length > 0 && (
+            <>
+              <div className="section-label">Your workouts</div>
+              <div className="card">
+                {customWorkouts.map((workout) => (
+                  <button
+                    key={workout.id}
+                    className="btn workout-choice"
+                    onClick={() => startCustomWorkout(workout.id)}
+                  >
+                    <span className="workout-choice-main">
+                      <span className="workout-choice-title">{workout.name}</span>
+                      <span className="workout-choice-sub">
+                        {customWorkoutSummary(workout, customExercises)}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
           {upcoming.length > 0 && (
             <>
               <div className="section-label">Upcoming</div>
@@ -175,7 +206,7 @@ export function TodayScreen() {
     <>
       <div className="screen-header">
         <h1>
-          Workout {session.type} <span className="pill">In progress</span>
+          {sessionTitle(session)} <span className="pill">In progress</span>
         </h1>
         <div className="sub">{formatDate(session.date)}</div>
       </div>

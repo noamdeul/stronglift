@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { buildShareModel } from '../domain/share';
 import type { WorkoutSession } from '../domain/types';
 import { renderShareImage } from '../lib/shareImage';
+import { useAppStore } from '../store/useAppStore';
 
 interface Props {
   session: WorkoutSession;
@@ -22,12 +23,13 @@ function downloadBlob(blob: Blob, fileName: string): void {
 export function ShareButton({ session, className, label = '📤 Share' }: Props) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const customExercises = useAppStore((s) => s.customExercises);
 
   const onShare = async () => {
     setBusy(true);
     setMsg(null);
     try {
-      const model = buildShareModel(session);
+      const model = buildShareModel(session, customExercises);
       const blob = await renderShareImage(model);
       const file = new File([blob], model.fileName, { type: 'image/png' });
 

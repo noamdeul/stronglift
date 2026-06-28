@@ -1,4 +1,5 @@
 import { buildFitMessages, type FitMessage } from '../domain/garmin';
+import { sessionSlug } from '../domain/session';
 import type { Settings, WorkoutSession } from '../domain/types';
 
 /**
@@ -107,5 +108,5 @@ export async function buildFitBlob(session: WorkoutSession, settings: Settings):
 /** A stable, readable filename for the exported file. */
 export function fitFileName(session: WorkoutSession): string {
   const date = session.date.slice(0, 10); // YYYY-MM-DD
-  return `fivebyfive-${date}-workout-${session.type}.fit`;
+  return `fivebyfive-${date}-workout-${sessionSlug(session)}.fit`;
 }

@@ -1,15 +1,22 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { ALL_EXERCISE_IDS, WORKOUT_TEMPLATES } from '../domain/exercises';
+import { WORKOUT_TEMPLATES } from '../domain/exercises';
 import { computeNextState, resultFromLogged } from '../domain/progression';
-import { buildSessionFromTemplate, flipWorkoutType } from '../domain/session';
+import { buildSessionFromCustom, buildSessionFromTemplate, flipWorkoutType } from '../domain/session';
+import { makeCustomExercise, validateCustomExercise } from '../domain/customExercises';
+import type { CustomExerciseInput } from '../domain/customExercises';
+import { makeCustomWorkout, validateCustomWorkout } from '../domain/customWorkouts';
+import type { CustomWorkoutInput } from '../domain/customWorkouts';
 import { defaultAppState, defaultSettings, SCHEMA_VERSION } from '../domain/defaults';
 import { BAR_WEIGHT, DEFAULT_ROUNDING, PLATE_SIZES, convertWeight } from '../domain/units';
 import type {
   AppState,
+  CustomWorkout,
+  ExerciseDef,
   ExerciseId,
   ExerciseState,
   LoggedSet,
+  ProgressionConfig,
   Settings,
   Unit,
   WorkoutSession,
@@ -39,6 +46,7 @@ interface Store extends AppState {
 
   // Session lifecycle.
   startWorkout: (type?: WorkoutType) => void;
+  startCustomWorkout: (workoutId: string) => void;
   discardWorkout: () => void;
   finishWorkout: () => void;
   dismissFinished: () => void;
@@ -61,6 +69,15 @@ interface Store extends AppState {
   updateSettings: (partial: Partial<Settings>) => void;
   editExerciseState: (id: ExerciseId, partial: Partial<ExerciseState>) => void;
   changeUnit: (unit: Unit) => void;
+
+  // Custom exercises & workouts. Add returns the new id (or null when input is
+  // invalid) so callers can clear their form on success.
+  addCustomExercise: (input: CustomExerciseInput) => string | null;
+  editCustomExercise: (id: ExerciseId, partial: Partial<ExerciseDef>) => void;
+  deleteCustomExercise: (id: ExerciseId) => void;
+  addCustomWorkout: (input: CustomWorkoutInput) => string | null;
+  editCustomWorkout: (id: string, partial: Partial<Omit<CustomWorkout, 'id'>>) => void;
+  deleteCustomWorkout: (id: string) => void;
   importData: (state: AppState) => void;
   resetAll: () => void;
   exportData: () => AppState;
@@ -130,6 +147,21 @@ function mapWarmupSets(
   return { ...session, exercises };
 }
 
+/** A progression config whose `increments` also covers custom exercises (their
+ *  increment lives on the def). Built-in increments win on id collision. */
+function withCustomIncrements(
+  config: ProgressionConfig,
+  customExercises: ExerciseDef[],
+): ProgressionConfig {
+  const increments: Record<ExerciseId, number> = { ...config.increments };
+  for (const def of customExercises) {
+    if (def.increment !== undefined && increments[def.id] === undefined) {
+      increments[def.id] = def.increment;
+    }
+  }
+  return { ...config, increments };
+}
+
 /** Extract only the persisted AppState slice from the full store. */
 function pickAppState(s: Store): AppState {
   return {
@@ -139,6 +171,8 @@ function pickAppState(s: Store): AppState {
     history: s.history,
     currentSession: s.currentSession,
     nextWorkoutType: s.nextWorkoutType,
+    customExercises: s.customExercises,
+    customWorkouts: s.customWorkouts,
   };
 }
 
@@ -152,6 +186,8 @@ function pickAppState(s: Store): AppState {
  *  - v4 -> v5 added `settings.keepScreenAwake`; default it on for older state.
  *  - v5 -> v6 added `settings.workoutDays`; default it to an empty array (no
  *    schedule) for older state.
+ *  - v6 -> v7 added `customExercises`/`customWorkouts`; default both to empty
+ *    arrays for older state. Existing sessions need no rewrite.
  */
 export function migratePersisted(persisted: unknown, version: number): AppState {
   const state = persisted as AppState;
@@ -173,6 +209,10 @@ export function migratePersisted(persisted: unknown, version: number): AppState 
   if (version < 6 && state?.settings && state.settings.workoutDays === undefined) {
     state.settings = { ...state.settings, workoutDays: [] };
   }
+  if (version < 7) {
+    if (state?.customExercises === undefined) state.customExercises = [];
+    if (state?.customWorkouts === undefined) state.customWorkouts = [];
+  }
   return state;
 }
 
@@ -186,7 +226,7 @@ export const useAppStore = create<Store>()(
       persistError: false,
 
       startWorkout: (type?: WorkoutType) => {
-        const { nextWorkoutType, exerciseStates, settings, currentSession } = get();
+        const { nextWorkoutType, exerciseStates, settings, currentSession, customExercises } = get();
         if (currentSession) return; // already in progress
         const chosen = type ?? nextWorkoutType;
         const session = buildSessionFromTemplate(
@@ -195,26 +235,56 @@ export const useAppStore = create<Store>()(
           settings,
           newId(),
           new Date().toISOString(),
+          customExercises,
         );
         // Keep the stored "next" in sync with what's actually running, so the
         // Today screen highlights coherently if the session is discarded.
         set({ currentSession: session, nextWorkoutType: chosen, lastFinished: null });
       },
 
+      startCustomWorkout: (workoutId) => {
+        const { exerciseStates, settings, currentSession, customExercises, customWorkouts } = get();
+        if (currentSession) return; // already in progress
+        const workout = customWorkouts.find((w) => w.id === workoutId);
+        if (!workout) return;
+        const session = buildSessionFromCustom(
+          workout,
+          exerciseStates,
+          settings,
+          customExercises,
+          newId(),
+          new Date().toISOString(),
+        );
+        // Custom workouts are picked on demand and stay out of the A/B rotation,
+        // so `nextWorkoutType` is intentionally left untouched.
+        set({ currentSession: session, lastFinished: null });
+      },
+
       discardWorkout: () =>
         set({ currentSession: null, lastFinished: null, rest: { endsAt: null, durationSec: 0 } }),
 
       finishWorkout: () => {
-        const { currentSession, exerciseStates, settings, history } = get();
+        const { currentSession, exerciseStates, settings, history, customExercises, nextWorkoutType } =
+          get();
         if (!currentSession) return;
+
+        // Merge custom exercises' per-def increments onto the built-in config so
+        // the progression engine advances custom lifts too.
+        const config = withCustomIncrements(settings.config, customExercises);
 
         const nextStates: Record<ExerciseId, ExerciseState> = { ...exerciseStates };
         for (const logged of currentSession.exercises) {
           const result = resultFromLogged(logged);
+          const prev =
+            exerciseStates[logged.exerciseId] ?? {
+              exerciseId: logged.exerciseId,
+              currentWeight: logged.weight,
+              consecutiveFailures: 0,
+            };
           nextStates[logged.exerciseId] = computeNextState(
-            exerciseStates[logged.exerciseId],
+            prev,
             result,
-            settings.config,
+            config,
             settings.rounding,
           );
         }
@@ -223,9 +293,12 @@ export const useAppStore = create<Store>()(
         set({
           history: [...history, completed],
           exerciseStates: nextStates,
-          // Flip relative to the session actually completed, so manually
-          // choosing a type stays coherent (finish B → next becomes A).
-          nextWorkoutType: flipWorkoutType(currentSession.type),
+          // Built-in sessions flip the A/B rotation (finish B → next becomes A).
+          // Custom sessions are off the rotation, so leave the pointer alone.
+          nextWorkoutType:
+            currentSession.kind === 'custom'
+              ? nextWorkoutType
+              : flipWorkoutType(currentSession.type ?? nextWorkoutType),
           currentSession: null,
           lastFinished: completed,
           rest: { endsAt: null, durationSec: 0 },
@@ -340,8 +413,9 @@ export const useAppStore = create<Store>()(
           const rounding = DEFAULT_ROUNDING[unit];
           const defaults = defaultSettings(unit);
 
+          // Convert every stored weight (built-in and custom exercises alike).
           const exerciseStates = { ...s.exerciseStates };
-          for (const id of ALL_EXERCISE_IDS) {
+          for (const id of Object.keys(exerciseStates)) {
             exerciseStates[id] = {
               ...exerciseStates[id],
               currentWeight: convertWeight(
@@ -352,6 +426,14 @@ export const useAppStore = create<Store>()(
               ),
             };
           }
+
+          // Custom exercises carry their increment in the active unit, so convert
+          // those too (built-in increments are reset to the unit defaults below).
+          const customExercises = s.customExercises.map((def) =>
+            def.increment === undefined
+              ? def
+              : { ...def, increment: convertWeight(def.increment, from, unit, rounding) },
+          );
 
           return {
             settings: {
@@ -364,8 +446,67 @@ export const useAppStore = create<Store>()(
               config: { ...s.settings.config, increments: defaults.config.increments },
             },
             exerciseStates,
+            customExercises,
           };
         }),
+
+      addCustomExercise: (input) => {
+        const validation = validateCustomExercise(input);
+        if (!validation.ok) return null;
+        const id = `custom-${newId()}`;
+        const def = makeCustomExercise(input, id);
+        set((s) => ({
+          customExercises: [...s.customExercises, def],
+          // Seed the progression state at the chosen starting weight.
+          exerciseStates: {
+            ...s.exerciseStates,
+            [id]: { exerciseId: id, currentWeight: input.startingWeight, consecutiveFailures: 0 },
+          },
+        }));
+        return id;
+      },
+
+      editCustomExercise: (id, partial) =>
+        set((s) => ({
+          customExercises: s.customExercises.map((def) =>
+            def.id === id ? { ...def, ...partial, id, custom: true } : def,
+          ),
+        })),
+
+      deleteCustomExercise: (id) =>
+        set((s) => {
+          const exerciseStates = { ...s.exerciseStates };
+          delete exerciseStates[id];
+          return {
+            customExercises: s.customExercises.filter((def) => def.id !== id),
+            exerciseStates,
+            // Scrub the deleted exercise out of any custom workout that used it.
+            customWorkouts: s.customWorkouts.map((w) =>
+              w.exercises.includes(id)
+                ? { ...w, exercises: w.exercises.filter((e) => e !== id) }
+                : w,
+            ),
+          };
+        }),
+
+      addCustomWorkout: (input) => {
+        const validation = validateCustomWorkout(input);
+        if (!validation.ok) return null;
+        const id = `workout-${newId()}`;
+        const workout = makeCustomWorkout(input, id);
+        set((s) => ({ customWorkouts: [...s.customWorkouts, workout] }));
+        return id;
+      },
+
+      editCustomWorkout: (id, partial) =>
+        set((s) => ({
+          customWorkouts: s.customWorkouts.map((w) =>
+            w.id === id ? { ...w, ...partial, id } : w,
+          ),
+        })),
+
+      deleteCustomWorkout: (id) =>
+        set((s) => ({ customWorkouts: s.customWorkouts.filter((w) => w.id !== id) })),
 
       importData: (state) =>
         set({
@@ -382,6 +523,8 @@ export const useAppStore = create<Store>()(
           history: state.history,
           currentSession: state.currentSession,
           nextWorkoutType: state.nextWorkoutType,
+          customExercises: state.customExercises ?? [],
+          customWorkouts: state.customWorkouts ?? [],
           lastFinished: null,
           rest: { endsAt: null, durationSec: 0 },
           // After an import the current data matches an external file the user

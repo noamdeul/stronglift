@@ -13,7 +13,12 @@ import { BAR_WEIGHT, DEFAULT_ROUNDING, PLATE_SIZES } from './units';
 // backfills it to `true` for older persisted state.
 // v6 added `settings.workoutDays` (planned training weekdays); the store's
 // `migrate` backfills it to an empty array for older persisted state.
-export const SCHEMA_VERSION = 6;
+// v7 added `customExercises` and `customWorkouts` (user-built exercises and
+// workouts); the store's `migrate` backfills both to empty arrays for older
+// persisted state. Existing sessions need no rewrite — the new WorkoutSession
+// fields (`kind`/`name`/`templateId`) are optional and old sessions are treated
+// as built-in.
+export const SCHEMA_VERSION = 7;
 
 /** Default per-exercise weight increments, per unit. */
 const INCREMENTS: Record<Unit, Record<ExerciseId, number>> = {
@@ -67,5 +72,7 @@ export function defaultAppState(unit: Unit = 'kg'): AppState {
     history: [],
     currentSession: null,
     nextWorkoutType: 'A',
+    customExercises: [],
+    customWorkouts: [],
   };
 }

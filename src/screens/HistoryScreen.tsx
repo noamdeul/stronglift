@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { EXERCISES } from '../domain/exercises';
+import { getExercise } from '../domain/exercises';
 import { isExerciseSucceeded } from '../domain/progression';
+import { sessionTitle } from '../domain/session';
 import { isSessionPR } from '../domain/strength';
 import type { WorkoutSession } from '../domain/types';
 import { formatWeight } from '../domain/units';
@@ -18,6 +19,7 @@ function formatDate(iso: string): string {
 
 export function HistoryScreen() {
   const history = useAppStore((s) => s.history);
+  const customExercises = useAppStore((s) => s.customExercises);
   const [selected, setSelected] = useState<WorkoutSession | null>(null);
 
   if (selected) {
@@ -52,7 +54,7 @@ export function HistoryScreen() {
               <div className="hist-row">
                 <div className="top">
                   <span className="date">
-                    Workout {session.type} · {formatDate(session.date)}
+                    {sessionTitle(session)} · {formatDate(session.date)}
                   </span>
                   <span className="badge-row">
                     {prSessionIds.has(session.id) && <span className="badge pr">🏆 PR</span>}
@@ -65,7 +67,7 @@ export function HistoryScreen() {
                   {session.exercises
                     .map(
                       (ex) =>
-                        `${EXERCISES[ex.exerciseId].name} ${formatWeight(ex.weight, session.unit)}`,
+                        `${getExercise(ex.exerciseId, customExercises).name} ${formatWeight(ex.weight, session.unit)}`,
                     )
                     .join(' · ')}
                 </div>

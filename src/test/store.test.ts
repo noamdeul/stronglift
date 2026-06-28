@@ -228,6 +228,8 @@ describe('exportData', () => {
         'history',
         'currentSession',
         'nextWorkoutType',
+        'customExercises',
+        'customWorkouts',
       ].sort(),
     );
   });
@@ -290,5 +292,122 @@ describe('migratePersisted', () => {
     state.settings.keepScreenAwake = false;
     const migrated = migratePersisted(state, 5);
     expect(migrated.settings.keepScreenAwake).toBe(false);
+  });
+
+  it('backfills customExercises/customWorkouts for v6 state', () => {
+    const v6 = defaultAppState('kg') as AppState;
+    delete (v6 as Partial<AppState>).customExercises;
+    delete (v6 as Partial<AppState>).customWorkouts;
+    const migrated = migratePersisted(v6, 6);
+    expect(migrated.customExercises).toEqual([]);
+    expect(migrated.customWorkouts).toEqual([]);
+  });
+});
+
+describe('custom exercises', () => {
+  it('adds an exercise, seeds its state, and returns its id', () => {
+    const id = useAppStore.getState().addCustomExercise({
+      name: 'Pull-up',
+      sets: 3,
+      reps: 8,
+      startingWeight: 30,
+      increment: 2.5,
+    });
+    expect(id).not.toBeNull();
+    const s = useAppStore.getState();
+    expect(s.customExercises).toHaveLength(1);
+    expect(s.exerciseStates[id!].currentWeight).toBe(30);
+    expect(s.exerciseStates[id!].consecutiveFailures).toBe(0);
+  });
+
+  it('rejects invalid input without mutating state', () => {
+    const id = useAppStore.getState().addCustomExercise({
+      name: '',
+      sets: 3,
+      reps: 8,
+      startingWeight: 30,
+      increment: 2.5,
+    });
+    expect(id).toBeNull();
+    expect(useAppStore.getState().customExercises).toHaveLength(0);
+  });
+
+  it('deletes an exercise, dropping its state and scrubbing it from workouts', () => {
+    const exId = useAppStore.getState().addCustomExercise({
+      name: 'Pull-up',
+      sets: 3,
+      reps: 8,
+      startingWeight: 30,
+      increment: 2.5,
+    })!;
+    const wId = useAppStore.getState().addCustomWorkout({
+      name: 'Upper',
+      exercises: ['bench', exId],
+    })!;
+    useAppStore.getState().deleteCustomExercise(exId);
+    const s = useAppStore.getState();
+    expect(s.customExercises).toHaveLength(0);
+    expect(s.exerciseStates[exId]).toBeUndefined();
+    expect(s.customWorkouts.find((w) => w.id === wId)!.exercises).toEqual(['bench']);
+  });
+
+  it('converts custom weights and increments when switching units', () => {
+    const exId = useAppStore.getState().addCustomExercise({
+      name: 'Pull-up',
+      sets: 3,
+      reps: 8,
+      startingWeight: 40,
+      increment: 2.5,
+    })!;
+    useAppStore.getState().changeUnit('lb');
+    const s = useAppStore.getState();
+    // 40 kg ~= 88.2 lb -> snaps to 90 lb (rounding 5); 2.5 kg ~= 5.5 lb -> 5 lb.
+    expect(s.exerciseStates[exId].currentWeight).toBe(90);
+    expect(s.customExercises[0].increment).toBe(5);
+  });
+});
+
+describe('custom workouts', () => {
+  it('starts a custom workout without touching the A/B rotation pointer', () => {
+    const exId = useAppStore.getState().addCustomExercise({
+      name: 'Pull-up',
+      sets: 3,
+      reps: 8,
+      startingWeight: 30,
+      increment: 2.5,
+    })!;
+    const wId = useAppStore.getState().addCustomWorkout({
+      name: 'Upper',
+      exercises: ['bench', exId],
+    })!;
+    const nextBefore = useAppStore.getState().nextWorkoutType;
+    useAppStore.getState().startCustomWorkout(wId);
+    const session = useAppStore.getState().currentSession!;
+    expect(session.kind).toBe('custom');
+    expect(session.name).toBe('Upper');
+    expect(useAppStore.getState().nextWorkoutType).toBe(nextBefore);
+  });
+
+  it('progresses a custom exercise on success and leaves the rotation alone', () => {
+    const exId = useAppStore.getState().addCustomExercise({
+      name: 'Pull-up',
+      sets: 1,
+      reps: 5,
+      startingWeight: 30,
+      increment: 2.5,
+    })!;
+    const wId = useAppStore.getState().addCustomWorkout({
+      name: 'Solo',
+      exercises: [exId],
+    })!;
+    const nextBefore = useAppStore.getState().nextWorkoutType;
+    useAppStore.getState().startCustomWorkout(wId);
+    useAppStore.getState().setReps(0, 0, false, 5); // succeed the only set
+    useAppStore.getState().finishWorkout();
+    const s = useAppStore.getState();
+    expect(s.exerciseStates[exId].currentWeight).toBe(32.5);
+    expect(s.nextWorkoutType).toBe(nextBefore);
+    expect(s.history).toHaveLength(1);
+    expect(s.history[0].kind).toBe('custom');
   });
 });

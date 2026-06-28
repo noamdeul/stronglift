@@ -1,4 +1,4 @@
-import { EXERCISES } from '../domain/exercises';
+import { getExercise } from '../domain/exercises';
 import type { LoggedExercise, Settings } from '../domain/types';
 import { computePlatesPerSide, formatPlateLoad, formatWeight } from '../domain/units';
 import { useAppStore } from '../store/useAppStore';
@@ -19,8 +19,9 @@ export function ExerciseCard({ exercise, exerciseIndex, settings }: Props) {
   const setWarmupReps = useAppStore((s) => s.setWarmupReps);
   const addWarmupSet = useAppStore((s) => s.addWarmupSet);
   const removeWarmupSet = useAppStore((s) => s.removeWarmupSet);
+  const customExercises = useAppStore((s) => s.customExercises);
 
-  const def = EXERCISES[exercise.exerciseId];
+  const def = getExercise(exercise.exerciseId, customExercises);
 
   const restSecondsFor = () =>
     exercise.exerciseId === 'deadlift'

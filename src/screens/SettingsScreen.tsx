@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { CustomExercisesEditor } from '../components/CustomExercisesEditor';
+import { CustomWorkoutsEditor } from '../components/CustomWorkoutsEditor';
 import { DataIO } from '../components/DataIO';
-import { ALL_EXERCISE_IDS, EXERCISES } from '../domain/exercises';
+import { ALL_EXERCISE_IDS, getExercise } from '../domain/exercises';
 import type { ExerciseId, Unit } from '../domain/types';
 import { useAppStore } from '../store/useAppStore';
 import { HelpScreen } from './HelpScreen';
@@ -12,10 +14,22 @@ const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 export function SettingsScreen() {
   const settings = useAppStore((s) => s.settings);
   const exerciseStates = useAppStore((s) => s.exerciseStates);
+  const customExercises = useAppStore((s) => s.customExercises);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const editExerciseState = useAppStore((s) => s.editExerciseState);
+  const editCustomExercise = useAppStore((s) => s.editCustomExercise);
   const changeUnit = useAppStore((s) => s.changeUnit);
   const resetAll = useAppStore((s) => s.resetAll);
+
+  // Built-in lifts plus any custom exercises, for the weight/increment lists.
+  const allExerciseIds: ExerciseId[] = [
+    ...ALL_EXERCISE_IDS,
+    ...customExercises.map((e) => e.id),
+  ];
+  const incrementFor = (id: ExerciseId): number =>
+    settings.config.increments[id] ??
+    customExercises.find((e) => e.id === id)?.increment ??
+    settings.rounding;
 
   const [pendingUnit, setPendingUnit] = useState<Unit | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -28,14 +42,18 @@ export function SettingsScreen() {
   };
 
   const setIncrement = (id: ExerciseId, value: number) => {
-    if (Number.isFinite(value) && value >= 0) {
-      updateSettings({
-        config: {
-          ...settings.config,
-          increments: { ...settings.config.increments, [id]: value },
-        },
-      });
+    if (!Number.isFinite(value) || value < 0) return;
+    // Custom exercises keep their increment on the def; built-ins in config.
+    if (customExercises.some((e) => e.id === id)) {
+      editCustomExercise(id, { increment: value });
+      return;
     }
+    updateSettings({
+      config: {
+        ...settings.config,
+        increments: { ...settings.config.increments, [id]: value },
+      },
+    });
   };
 
   const setRest = (key: 'normal' | 'heavy' | 'deadlift', value: number) => {
@@ -125,16 +143,22 @@ export function SettingsScreen() {
           </p>
         </div>
 
+        <div className="section-label">Custom exercises</div>
+        <CustomExercisesEditor />
+
+        <div className="section-label">Custom workouts</div>
+        <CustomWorkoutsEditor />
+
         <div className="section-label">Current working weights ({settings.unit})</div>
         <div className="card">
-          {ALL_EXERCISE_IDS.map((id) => (
+          {allExerciseIds.map((id) => (
             <div className="field" key={id}>
-              <label>{EXERCISES[id].name}</label>
+              <label>{getExercise(id, customExercises).name}</label>
               <input
                 type="number"
                 inputMode="decimal"
                 step={settings.rounding}
-                value={exerciseStates[id].currentWeight}
+                value={exerciseStates[id]?.currentWeight ?? 0}
                 onChange={(e) => setWeight(id, parseFloat(e.target.value))}
               />
             </div>
@@ -143,14 +167,14 @@ export function SettingsScreen() {
 
         <div className="section-label">Weight increments ({settings.unit})</div>
         <div className="card">
-          {ALL_EXERCISE_IDS.map((id) => (
+          {allExerciseIds.map((id) => (
             <div className="field" key={id}>
-              <label>{EXERCISES[id].name}</label>
+              <label>{getExercise(id, customExercises).name}</label>
               <input
                 type="number"
                 inputMode="decimal"
                 step={settings.rounding}
-                value={settings.config.increments[id]}
+                value={incrementFor(id)}
                 onChange={(e) => setIncrement(id, parseFloat(e.target.value))}
               />
             </div>

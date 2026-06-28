@@ -19,10 +19,12 @@ import { lbToKg } from './units';
  *  rest + active. */
 export const SECONDS_PER_REP = 3;
 
-/** Maps each lift to its FIT exercise `category` and the *name* of its category
- *  subtype. The subtype name is resolved to a numeric value at the encoder
- *  boundary against the installed SDK's profile, so this stays SDK-free. */
-export const EXERCISE_FIT_MAP: Record<ExerciseId, { category: string; subtypeName: string }> = {
+/** Maps each built-in lift to its FIT exercise `category` and the *name* of its
+ *  category subtype. The subtype name is resolved to a numeric value at the
+ *  encoder boundary against the installed SDK's profile, so this stays SDK-free.
+ *  Custom exercises have no entry — their sets are exported without a category
+ *  (the encoder simply omits it). */
+export const EXERCISE_FIT_MAP: Record<ExerciseId, { category: string; subtypeName: string } | undefined> = {
   squat: { category: 'squat', subtypeName: 'barbellBackSquat' },
   bench: { category: 'benchPress', subtypeName: 'barbellBenchPress' },
   row: { category: 'row', subtypeName: 'barbellRow' },
@@ -118,8 +120,10 @@ function activeSetMessage(
     durationSec: Math.max(0, Math.round((timestamp.getTime() - startTime.getTime()) / 1000)),
     repetitions: set.reps,
     weightKg: set.weightKg,
-    category: map.category,
-    subtypeName: map.subtypeName,
+    // Custom exercises have no FIT category/subtype; omit them so the encoder
+    // exports a plain strength set instead of indexing an undefined mapping.
+    category: map?.category,
+    subtypeName: map?.subtypeName,
     weightDisplayUnit: weightDisplayUnit(unit),
   };
 }

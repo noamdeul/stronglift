@@ -15,6 +15,19 @@ export const WORKOUT_TEMPLATES: Record<WorkoutType, WorkoutTemplate> = {
   B: { type: 'B', exercises: ['squat', 'ohp', 'deadlift'] },
 };
 
-export function getExercise(id: ExerciseId): ExerciseDef {
-  return EXERCISES[id];
+/**
+ * Resolve an exercise definition by id, checking the built-in lifts first, then
+ * the user's custom exercises. Falls back to a placeholder so history that
+ * references a since-deleted custom exercise still renders instead of crashing.
+ */
+export function getExercise(id: ExerciseId, custom: ExerciseDef[] = []): ExerciseDef {
+  return (
+    EXERCISES[id] ??
+    custom.find((e) => e.id === id) ?? {
+      id,
+      name: 'Unknown exercise',
+      sets: 5,
+      reps: 5,
+    }
+  );
 }

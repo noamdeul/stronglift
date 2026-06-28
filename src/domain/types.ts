@@ -1,6 +1,11 @@
 export type Unit = 'kg' | 'lb';
 
-export type ExerciseId = 'squat' | 'bench' | 'row' | 'ohp' | 'deadlift';
+/**
+ * An exercise identifier. The five built-in lifts use stable string ids
+ * (`'squat'`, `'bench'`, …); user-created exercises get generated ids. Kept as a
+ * plain `string` so custom exercises are first-class without changing the type.
+ */
+export type ExerciseId = string;
 
 export type WorkoutType = 'A' | 'B';
 
@@ -11,10 +16,24 @@ export interface ExerciseDef {
   sets: number;
   /** Target reps per work set. */
   reps: number;
+  /** True for user-created exercises (built-in lifts omit this). */
+  custom?: boolean;
+  /** Progression increment in the active unit. Only set on custom exercises;
+   *  built-in increments live in `Settings.config.increments`. */
+  increment?: number;
 }
 
 export interface WorkoutTemplate {
   type: WorkoutType;
+  exercises: ExerciseId[];
+}
+
+/** A user-built workout: a named, ordered list of exercises (built-in and/or
+ *  custom). Chosen on demand from the Today screen; not part of the A/B
+ *  rotation. */
+export interface CustomWorkout {
+  id: string;
+  name: string;
   exercises: ExerciseId[];
 }
 
@@ -45,7 +64,17 @@ export interface WorkoutSession {
   id: string;
   /** ISO timestamp. */
   date: string;
-  type: WorkoutType;
+  /** The A/B rotation type for built-in workouts. Absent on custom-workout
+   *  sessions, which carry `name`/`templateId` instead. */
+  type?: WorkoutType;
+  /** Distinguishes a built-in A/B session from a custom-workout one. Absent on
+   *  sessions logged before custom workouts existed (treated as built-in). */
+  kind?: 'builtin' | 'custom';
+  /** Display name for the session, e.g. a custom workout's name. When absent,
+   *  the UI derives "Workout {type}". */
+  name?: string;
+  /** Id of the custom workout this session was built from, if any. */
+  templateId?: string;
   /** Unit captured at the time the session was logged. */
   unit: Unit;
   exercises: LoggedExercise[];
@@ -101,6 +130,10 @@ export interface AppState {
   /** In-progress session; persisted so it survives a reload. */
   currentSession: WorkoutSession | null;
   nextWorkoutType: WorkoutType;
+  /** User-created exercise definitions. */
+  customExercises: ExerciseDef[];
+  /** User-created workout templates. */
+  customWorkouts: CustomWorkout[];
 }
 
 /** Per-exercise success/fail result derived from a completed session. */
