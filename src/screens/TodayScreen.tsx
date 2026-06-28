@@ -5,8 +5,23 @@ import { ShareButton } from '../components/ShareButton';
 import { GarminExportButton } from '../components/GarminExportButton';
 import { EXERCISES } from '../domain/exercises';
 import { isExerciseSucceeded } from '../domain/progression';
+import { upcomingWorkouts } from '../domain/schedule';
 import { formatWeight } from '../domain/units';
+import type { WorkoutType } from '../domain/types';
 import { useAppStore } from '../store/useAppStore';
+
+const WORKOUT_SUMMARY: Record<WorkoutType, string> = {
+  A: 'Squat · Bench Press · Barbell Row',
+  B: 'Squat · Overhead Press · Deadlift',
+};
+
+function formatDay(date: Date): string {
+  return date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -94,6 +109,10 @@ export function TodayScreen() {
   }
 
   if (!session) {
+    const upcoming =
+      settings.workoutDays.length > 0
+        ? upcomingWorkouts(settings.workoutDays, nextType, new Date(), 4)
+        : [];
     return (
       <>
         <div className="screen-header">
@@ -101,20 +120,43 @@ export function TodayScreen() {
           <div className="sub">Ready when you are</div>
         </div>
         <div className="screen">
-          <div className="card" style={{ textAlign: 'center' }}>
-            <div className="muted">Next workout</div>
-            <div style={{ fontSize: '2.4rem', fontWeight: 800, margin: '6px 0' }}>
-              Workout {nextType}
+          <div className="card">
+            <div className="muted" style={{ marginBottom: 10 }}>
+              Choose a workout
             </div>
-            <div className="muted" style={{ marginBottom: 16 }}>
-              {nextType === 'A'
-                ? 'Squat · Bench Press · Barbell Row'
-                : 'Squat · Overhead Press · Deadlift'}
-            </div>
-            <button className="btn btn-primary" onClick={startWorkout}>
-              Start Workout {nextType}
-            </button>
+            {(['A', 'B'] as WorkoutType[]).map((type) => {
+              const isNext = type === nextType;
+              return (
+                <button
+                  key={type}
+                  className={`btn workout-choice ${isNext ? 'btn-primary' : ''}`}
+                  onClick={() => startWorkout(type)}
+                >
+                  <span className="workout-choice-main">
+                    <span className="workout-choice-title">
+                      Workout {type}
+                      {isNext && <span className="badge ok">Next</span>}
+                    </span>
+                    <span className="workout-choice-sub">{WORKOUT_SUMMARY[type]}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
+
+          {upcoming.length > 0 && (
+            <>
+              <div className="section-label">Upcoming</div>
+              <div className="card">
+                {upcoming.map((w, i) => (
+                  <div key={i} className="summary-row">
+                    <span>{formatDay(w.date)}</span>
+                    <span className="muted">Workout {w.type}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </>
     );

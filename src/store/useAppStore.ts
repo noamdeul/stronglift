@@ -13,6 +13,7 @@ import type {
   Settings,
   Unit,
   WorkoutSession,
+  WorkoutType,
 } from '../domain/types';
 
 export type Tab = 'today' | 'history' | 'progress' | 'settings';
@@ -37,7 +38,7 @@ interface Store extends AppState {
   persistError: boolean;
 
   // Session lifecycle.
-  startWorkout: () => void;
+  startWorkout: (type?: WorkoutType) => void;
   discardWorkout: () => void;
   finishWorkout: () => void;
   dismissFinished: () => void;
@@ -149,6 +150,8 @@ function pickAppState(s: Store): AppState {
  *  - v3 -> v4 added `settings.barWeight`/`settings.plates`; backfill from the
  *    unit defaults for older state.
  *  - v4 -> v5 added `settings.keepScreenAwake`; default it on for older state.
+ *  - v5 -> v6 added `settings.workoutDays`; default it to an empty array (no
+ *    schedule) for older state.
  */
 export function migratePersisted(persisted: unknown, version: number): AppState {
   const state = persisted as AppState;
@@ -167,6 +170,9 @@ export function migratePersisted(persisted: unknown, version: number): AppState 
   if (version < 5 && state?.settings && state.settings.keepScreenAwake === undefined) {
     state.settings = { ...state.settings, keepScreenAwake: true };
   }
+  if (version < 6 && state?.settings && state.settings.workoutDays === undefined) {
+    state.settings = { ...state.settings, workoutDays: [] };
+  }
   return state;
 }
 
@@ -179,24 +185,27 @@ export const useAppStore = create<Store>()(
       lastBackupAt: null,
       persistError: false,
 
-      startWorkout: () => {
+      startWorkout: (type?: WorkoutType) => {
         const { nextWorkoutType, exerciseStates, settings, currentSession } = get();
         if (currentSession) return; // already in progress
+        const chosen = type ?? nextWorkoutType;
         const session = buildSessionFromTemplate(
-          nextWorkoutType,
+          chosen,
           exerciseStates,
           settings,
           newId(),
           new Date().toISOString(),
         );
-        set({ currentSession: session, lastFinished: null });
+        // Keep the stored "next" in sync with what's actually running, so the
+        // Today screen highlights coherently if the session is discarded.
+        set({ currentSession: session, nextWorkoutType: chosen, lastFinished: null });
       },
 
       discardWorkout: () =>
         set({ currentSession: null, lastFinished: null, rest: { endsAt: null, durationSec: 0 } }),
 
       finishWorkout: () => {
-        const { currentSession, exerciseStates, settings, history, nextWorkoutType } = get();
+        const { currentSession, exerciseStates, settings, history } = get();
         if (!currentSession) return;
 
         const nextStates: Record<ExerciseId, ExerciseState> = { ...exerciseStates };
@@ -214,7 +223,9 @@ export const useAppStore = create<Store>()(
         set({
           history: [...history, completed],
           exerciseStates: nextStates,
-          nextWorkoutType: flipWorkoutType(nextWorkoutType),
+          // Flip relative to the session actually completed, so manually
+          // choosing a type stays coherent (finish B → next becomes A).
+          nextWorkoutType: flipWorkoutType(currentSession.type),
           currentSession: null,
           lastFinished: completed,
           rest: { endsAt: null, durationSec: 0 },

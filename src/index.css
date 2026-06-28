@@ -526,6 +526,44 @@ select {
   color: #fff;
 }
 
+/* Weekday picker: 7 equal-width chips filling the card width. */
+.day-toggle {
+  display: flex;
+  width: 100%;
+}
+.day-toggle button {
+  flex: 1;
+  padding: 10px 0;
+  text-align: center;
+}
+
+/* Today screen: stacked workout-choice buttons with title + exercise list. */
+.workout-choice {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  text-align: left;
+}
+.workout-choice + .workout-choice {
+  margin-top: 10px;
+}
+.workout-choice-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.workout-choice-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+}
+.workout-choice-sub {
+  font-size: 0.85rem;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
 /* Dialog ------------------------------------------------------------------ */
 .overlay {
   position: fixed;

@@ -87,6 +87,8 @@ export interface Settings {
   barWeight: number;
   /** Available plate sizes (per single plate), largest first, in the active unit. */
   plates: number[];
+  /** Weekdays the user plans to train (0=Sun … 6=Sat). Empty = no schedule. */
+  workoutDays: number[];
   config: ProgressionConfig;
 }
 

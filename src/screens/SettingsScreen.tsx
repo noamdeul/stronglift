@@ -5,6 +5,9 @@ import { ALL_EXERCISE_IDS, EXERCISES } from '../domain/exercises';
 import type { ExerciseId, Unit } from '../domain/types';
 import { useAppStore } from '../store/useAppStore';
 
+// Sun-first weekday labels, indexed 0-6 to match Date.getDay().
+const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
 export function SettingsScreen() {
   const settings = useAppStore((s) => s.settings);
   const exerciseStates = useAppStore((s) => s.exerciseStates);
@@ -58,6 +61,14 @@ export function SettingsScreen() {
     updateSettings({ plates: settings.plates.filter((p) => p !== value) });
   };
 
+  const toggleDay = (day: number) => {
+    const has = settings.workoutDays.includes(day);
+    const next = has
+      ? settings.workoutDays.filter((d) => d !== day)
+      : [...settings.workoutDays, day].sort((a, b) => a - b);
+    updateSettings({ workoutDays: next });
+  };
+
   return (
     <>
       <div className="screen-header">
@@ -79,6 +90,26 @@ export function SettingsScreen() {
               ))}
             </div>
           </div>
+        </div>
+
+        <div className="section-label">Workout days</div>
+        <div className="card">
+          <div className="toggle day-toggle">
+            {DAY_LABELS.map((label, day) => (
+              <button
+                key={day}
+                className={settings.workoutDays.includes(day) ? 'active' : ''}
+                onClick={() => toggleDay(day)}
+                aria-pressed={settings.workoutDays.includes(day)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="muted" style={{ margin: '10px 0 0' }}>
+            Pick the days you plan to train to preview upcoming sessions on the Today screen. This
+            doesn&apos;t change your progression.
+          </p>
         </div>
 
         <div className="section-label">Current working weights ({settings.unit})</div>

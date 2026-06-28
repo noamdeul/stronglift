@@ -11,7 +11,9 @@ import { BAR_WEIGHT, DEFAULT_ROUNDING, PLATE_SIZES } from './units';
 // `migrate` backfills them from the unit defaults for older persisted state.
 // v5 added `settings.keepScreenAwake` (Screen Wake Lock); the store's `migrate`
 // backfills it to `true` for older persisted state.
-export const SCHEMA_VERSION = 5;
+// v6 added `settings.workoutDays` (planned training weekdays); the store's
+// `migrate` backfills it to an empty array for older persisted state.
+export const SCHEMA_VERSION = 6;
 
 /** Default per-exercise weight increments, per unit. */
 const INCREMENTS: Record<Unit, Record<ExerciseId, number>> = {
@@ -39,6 +41,7 @@ export function defaultSettings(unit: Unit): Settings {
     keepScreenAwake: true,
     barWeight: BAR_WEIGHT[unit],
     plates: [...PLATE_SIZES[unit]],
+    workoutDays: [],
     config: {
       increments: INCREMENTS[unit],
       deloadFactor: 0.1,
