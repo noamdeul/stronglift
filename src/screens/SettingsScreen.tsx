@@ -116,6 +116,20 @@ export function SettingsScreen() {
               onChange={(e) => setRest('deadlift', parseInt(e.target.value, 10))}
             />
           </div>
+          <div className="field">
+            <label>Sound when done</label>
+            <div className="toggle">
+              {([['On', true], ['Off', false]] as [string, boolean][]).map(([label, value]) => (
+                <button
+                  key={label}
+                  className={settings.sound === value ? 'active' : ''}
+                  onClick={() => settings.sound !== value && updateSettings({ sound: value })}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="section-label">Deload</div>

@@ -79,6 +79,8 @@ export interface Settings {
   restSeconds: RestSeconds;
   /** Smallest loadable increment (plate pair), e.g. 2.5 kg / 5 lb. */
   rounding: number;
+  /** Play a sound when the rest timer finishes (in addition to vibration). */
+  sound: boolean;
   config: ProgressionConfig;
 }
 

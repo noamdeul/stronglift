@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useAppStore } from '../store/useAppStore';
+import { migratePersisted, useAppStore } from '../store/useAppStore';
 import { defaultAppState } from '../domain/defaults';
 import { BAR_WEIGHT } from '../domain/units';
 import type { AppState } from '../domain/types';
@@ -241,5 +241,22 @@ describe('rest timer actions', () => {
     expect(rest.endsAt).not.toBeNull();
     useAppStore.getState().stopRest();
     expect(useAppStore.getState().rest.endsAt).toBeNull();
+  });
+});
+
+describe('migratePersisted', () => {
+  it('backfills settings.sound for v2 state', () => {
+    const v2 = defaultAppState('kg') as AppState;
+    // Simulate older persisted state lacking the field.
+    delete (v2.settings as Partial<AppState['settings']>).sound;
+    const migrated = migratePersisted(v2, 2);
+    expect(migrated.settings.sound).toBe(true);
+  });
+
+  it('leaves an explicit sound setting untouched', () => {
+    const state = defaultAppState('kg') as AppState;
+    state.settings.sound = false;
+    const migrated = migratePersisted(state, 3);
+    expect(migrated.settings.sound).toBe(false);
   });
 });

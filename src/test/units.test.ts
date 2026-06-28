@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  computePlatesPerSide,
   convertWeight,
+  formatPlateLoad,
   formatWeight,
   kgToLb,
   lbToKg,
@@ -43,5 +45,46 @@ describe('units', () => {
     expect(formatWeight(60, 'kg')).toBe('60 kg');
     expect(formatWeight(42.5, 'kg')).toBe('42.5 kg');
     expect(formatWeight(45, 'lb')).toBe('45 lb');
+  });
+
+  describe('plate calculator', () => {
+    it('loads a clean weight from the largest plates first', () => {
+      // 60 kg on a 20 kg bar => 20 kg per side => one 20.
+      expect(computePlatesPerSide(60, 'kg').perSide).toEqual([20]);
+      // 100 kg => 40 per side => 25 + 15.
+      expect(computePlatesPerSide(100, 'kg').perSide).toEqual([25, 15]);
+    });
+
+    it('uses small plates and reports no leftover for loadable weights', () => {
+      // 62.5 kg => 21.25 per side => 20 + 1.25.
+      const load = computePlatesPerSide(62.5, 'kg');
+      expect(load.perSide).toEqual([20, 1.25]);
+      expect(load.leftover).toBe(0);
+    });
+
+    it('treats bar-only weight as no plates', () => {
+      const load = computePlatesPerSide(20, 'kg');
+      expect(load.perSide).toEqual([]);
+      expect(load.leftover).toBe(0);
+    });
+
+    it('flags weights below the bar', () => {
+      const load = computePlatesPerSide(10, 'kg');
+      expect(load.perSide).toEqual([]);
+      expect(load.leftover).toBe(5);
+    });
+
+    it('reports leftover when the weight is not plate-divisible', () => {
+      // 21 kg => 0.5 per side, smaller than the smallest 1.25 plate.
+      const load = computePlatesPerSide(21, 'kg');
+      expect(load.perSide).toEqual([]);
+      expect(load.leftover).toBe(0.5);
+    });
+
+    it('formats the per-side breakdown', () => {
+      expect(formatPlateLoad(computePlatesPerSide(100, 'kg'), 'kg')).toBe('Bar + 25 + 15 / side');
+      expect(formatPlateLoad(computePlatesPerSide(20, 'kg'), 'kg')).toBe('Bar only');
+      expect(formatPlateLoad(computePlatesPerSide(10, 'kg'), 'kg')).toBe('Below the bar');
+    });
   });
 });

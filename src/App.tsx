@@ -5,6 +5,7 @@ import { RestTimerBar } from './components/RestTimerBar';
 import { StorageWarning } from './components/StorageWarning';
 import { usePwaUpdate } from './hooks/usePwaUpdate';
 import { HistoryScreen } from './screens/HistoryScreen';
+import { ProgressScreen } from './screens/ProgressScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import type { Tab } from './store/useAppStore';
@@ -17,6 +18,7 @@ export default function App() {
     <div className="app">
       {tab === 'today' && <TodayScreen />}
       {tab === 'history' && <HistoryScreen />}
+      {tab === 'progress' && <ProgressScreen />}
       {tab === 'settings' && <SettingsScreen />}
 
       <RestTimerBar />

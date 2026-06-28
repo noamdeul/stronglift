@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { EXERCISES } from '../domain/exercises';
 import { isExerciseSucceeded } from '../domain/progression';
+import { isSessionPR } from '../domain/strength';
 import type { WorkoutSession } from '../domain/types';
 import { formatWeight } from '../domain/units';
 import { useAppStore } from '../store/useAppStore';
@@ -23,6 +24,10 @@ export function HistoryScreen() {
     return <SessionDetail session={selected} onBack={() => setSelected(null)} />;
   }
 
+  // Flag each session that set an estimated-1RM PR vs. everything before it.
+  const prSessionIds = new Set(
+    history.filter((s, i) => isSessionPR(s, history.slice(0, i))).map((s) => s.id),
+  );
   const reversed = [...history].reverse();
 
   return (
@@ -49,8 +54,11 @@ export function HistoryScreen() {
                   <span className="date">
                     Workout {session.type} · {formatDate(session.date)}
                   </span>
-                  <span className={`badge ${allOk ? 'ok' : 'bad'}`}>
-                    {allOk ? '✓ All sets' : `${okCount}/${session.exercises.length}`}
+                  <span className="badge-row">
+                    {prSessionIds.has(session.id) && <span className="badge pr">🏆 PR</span>}
+                    <span className={`badge ${allOk ? 'ok' : 'bad'}`}>
+                      {allOk ? '✓ All sets' : `${okCount}/${session.exercises.length}`}
+                    </span>
                   </span>
                 </div>
                 <div className="muted">

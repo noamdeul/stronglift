@@ -5,7 +5,9 @@ import { BAR_WEIGHT, DEFAULT_ROUNDING } from './units';
 // v2 added the optional `completedAt` timestamp to LoggedSet (for the Garmin
 // .FIT export). It is optional, so v1 data is valid v2 data — see the store's
 // `migrate` passthrough.
-export const SCHEMA_VERSION = 2;
+// v3 added `settings.sound` (rest-timer completion sound); the store's `migrate`
+// backfills it to `true` for older persisted state.
+export const SCHEMA_VERSION = 3;
 
 /** Default per-exercise weight increments, per unit. */
 const INCREMENTS: Record<Unit, Record<ExerciseId, number>> = {
@@ -29,6 +31,7 @@ export function defaultSettings(unit: Unit): Settings {
     unit,
     restSeconds: { normal: 90, heavy: 180, deadlift: 300 },
     rounding: DEFAULT_ROUNDING[unit],
+    sound: true,
     config: {
       increments: INCREMENTS[unit],
       deloadFactor: 0.1,

@@ -8,6 +8,7 @@ interface Props {
 const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: 'today', icon: '🏋️', label: 'Today' },
   { id: 'history', icon: '📅', label: 'History' },
+  { id: 'progress', icon: '📈', label: 'Progress' },
   { id: 'settings', icon: '⚙️', label: 'Settings' },
 ];
 

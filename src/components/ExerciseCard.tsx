@@ -1,6 +1,6 @@
 import { EXERCISES } from '../domain/exercises';
 import type { LoggedExercise, Settings } from '../domain/types';
-import { formatWeight } from '../domain/units';
+import { computePlatesPerSide, formatPlateLoad, formatWeight } from '../domain/units';
 import { useAppStore } from '../store/useAppStore';
 import { SetTracker } from './SetTracker';
 import { WarmupSets } from './WarmupSets';
@@ -50,6 +50,9 @@ export function ExerciseCard({ exercise, exerciseIndex, settings }: Props) {
         </span>
       </div>
       <div className="weight-big">{formatWeight(exercise.weight, settings.unit)}</div>
+      <div className="plate-load">
+        {formatPlateLoad(computePlatesPerSide(exercise.weight, settings.unit), settings.unit)}
+      </div>
 
       <WarmupSets
         sets={exercise.warmupSets}
