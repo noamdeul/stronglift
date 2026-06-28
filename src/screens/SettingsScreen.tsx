@@ -4,6 +4,7 @@ import { DataIO } from '../components/DataIO';
 import { ALL_EXERCISE_IDS, EXERCISES } from '../domain/exercises';
 import type { ExerciseId, Unit } from '../domain/types';
 import { useAppStore } from '../store/useAppStore';
+import { HelpScreen } from './HelpScreen';
 
 // Sun-first weekday labels, indexed 0-6 to match Date.getDay().
 const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -18,6 +19,7 @@ export function SettingsScreen() {
 
   const [pendingUnit, setPendingUnit] = useState<Unit | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const setWeight = (id: ExerciseId, value: number) => {
     if (Number.isFinite(value) && value >= 0) {
@@ -69,6 +71,10 @@ export function SettingsScreen() {
     updateSettings({ workoutDays: next });
   };
 
+  if (showHelp) {
+    return <HelpScreen onBack={() => setShowHelp(false)} />;
+  }
+
   return (
     <>
       <div className="screen-header">
@@ -90,6 +96,13 @@ export function SettingsScreen() {
               ))}
             </div>
           </div>
+        </div>
+
+        <div className="section-label">Help</div>
+        <div className="card">
+          <button className="btn" onClick={() => setShowHelp(true)}>
+            📖 How to use FiveByFive
+          </button>
         </div>
 
         <div className="section-label">Workout days</div>
