@@ -4,6 +4,7 @@ import { BottomNav } from './components/BottomNav';
 import { RestTimerBar } from './components/RestTimerBar';
 import { StorageWarning } from './components/StorageWarning';
 import { usePwaUpdate } from './hooks/usePwaUpdate';
+import { useWakeLock } from './hooks/useWakeLock';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { ProgressScreen } from './screens/ProgressScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
@@ -13,6 +14,7 @@ import type { Tab } from './store/useAppStore';
 export default function App() {
   const [tab, setTab] = useState<Tab>('today');
   const { needRefresh, update, dismiss } = usePwaUpdate();
+  useWakeLock();
 
   return (
     <div className="app">
