@@ -15,7 +15,7 @@ import type {
   WorkoutSession,
 } from '../domain/types';
 
-export type Tab = 'today' | 'history' | 'settings';
+export type Tab = 'today' | 'history' | 'progress' | 'settings';
 
 interface RestTimer {
   /** Epoch ms when the current rest ends, or null when idle. */
@@ -139,6 +139,20 @@ function pickAppState(s: Store): AppState {
     currentSession: s.currentSession,
     nextWorkoutType: s.nextWorkoutType,
   };
+}
+
+/**
+ * Migrate persisted state forward across schema versions.
+ *  - v1 -> v2 added the optional `completedAt` on LoggedSet; old data is valid
+ *    as-is (sets simply lack it and the export synthesizes timing).
+ *  - v2 -> v3 added `settings.sound`; default it on for older state.
+ */
+export function migratePersisted(persisted: unknown, version: number): AppState {
+  const state = persisted as AppState;
+  if (version < 3 && state?.settings && state.settings.sound === undefined) {
+    state.settings = { ...state.settings, sound: true };
+  }
+  return state;
 }
 
 export const useAppStore = create<Store>()(
@@ -328,7 +342,8 @@ export const useAppStore = create<Store>()(
       importData: (state) =>
         set({
           schemaVersion: SCHEMA_VERSION,
-          settings: state.settings,
+          // Backfill fields added in later schema versions for older backups.
+          settings: { ...state.settings, sound: state.settings.sound ?? true },
           exerciseStates: state.exerciseStates,
           history: state.history,
           currentSession: state.currentSession,
@@ -358,15 +373,7 @@ export const useAppStore = create<Store>()(
       version: SCHEMA_VERSION,
       storage: guardedStorage,
       partialize: (s) => ({ ...pickAppState(s as Store), lastBackupAt: (s as Store).lastBackupAt }),
-      migrate: (persisted, version) => {
-        // v1 -> v2 added the optional `completedAt` on LoggedSet; old data is
-        // valid as-is (sets simply lack it and the export synthesizes timing).
-        // Future shape-changing bumps add their handling here.
-        if (version < SCHEMA_VERSION) {
-          return persisted as AppState;
-        }
-        return persisted as AppState;
-      },
+      migrate: (persisted, version) => migratePersisted(persisted, version),
     },
   ),
 );

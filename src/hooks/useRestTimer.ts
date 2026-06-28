@@ -14,9 +14,31 @@ export interface RestTimerView {
  * source of truth is a timestamp (not a ticking counter), the countdown stays
  * accurate after the screen sleeps or the app is backgrounded.
  */
+/** Short WebAudio beep so the timer is noticeable without an audio asset. */
+function playBeep() {
+  if (typeof window === 'undefined') return;
+  const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) return;
+  try {
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.value = 0.2;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    osc.onended = () => ctx.close();
+  } catch {
+    // Audio may be unavailable (e.g. autoplay policy); fail silently.
+  }
+}
+
 export function useRestTimer(): RestTimerView {
   const rest = useAppStore((s) => s.rest);
   const stopRest = useAppStore((s) => s.stopRest);
+  const sound = useAppStore((s) => s.settings.sound);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -34,10 +56,11 @@ export function useRestTimer(): RestTimerView {
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         navigator.vibrate?.([200, 100, 200]);
       }
+      if (sound) playBeep();
       stopRest();
     }, msLeft);
     return () => clearTimeout(id);
-  }, [rest.endsAt, stopRest]);
+  }, [rest.endsAt, stopRest, sound]);
 
   if (rest.endsAt == null) {
     return { active: false, remainingSec: 0, durationSec: rest.durationSec, progress: 0 };

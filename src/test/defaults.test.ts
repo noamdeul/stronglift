@@ -22,6 +22,7 @@ describe('defaultSettings', () => {
     });
     expect(s.config.deloadFactor).toBe(0.1);
     expect(s.config.deloadFailThreshold).toBe(3);
+    expect(s.sound).toBe(true);
   });
 
   it('uses lb increments and rounding for a lb setup', () => {
