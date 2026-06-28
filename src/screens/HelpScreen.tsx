@@ -40,7 +40,36 @@ export function HelpScreen({ onBack }: Props) {
           </ul>
           <p className="muted" style={{ marginBottom: 0 }}>
             After you finish a session the app flips to the other workout for next
-            time. Squat is in both, so you squat every session.
+            time. Squat is in both, so you squat every session. Prefer something
+            different? You can also build your own exercises and workouts — see{' '}
+            <strong>Build your own</strong> below.
+          </p>
+        </div>
+
+        <div className="section-label">Build your own</div>
+        <div className="card">
+          <p className="muted" style={{ marginTop: 0 }}>
+            Beyond the built-in A/B program, you can add your own lifts and
+            routines from <strong>Settings</strong>:
+          </p>
+          <ul className="help-list">
+            <li>
+              <strong>Custom exercises</strong> — under{' '}
+              <strong>Custom exercises</strong> in Settings, give it a name, work
+              sets, target reps, a starting weight, and an increment. It then
+              progresses and deloads with the exact same engine as the built-in
+              lifts.
+            </li>
+            <li>
+              <strong>Custom workouts</strong> — under{' '}
+              <strong>Custom workouts</strong> in Settings, name the workout and
+              tap exercises (built-in or your own) to add them in order.
+            </li>
+          </ul>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            Your workouts show up under <strong>Your workouts</strong> on the
+            Today screen and start whenever you tap one — they're picked on demand
+            and don't change the automatic A/B rotation.
           </p>
         </div>
 
