@@ -5,7 +5,7 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
   bench: { id: 'bench', name: 'Bench Press', sets: 5, reps: 5 },
   row: { id: 'row', name: 'Barbell Row', sets: 5, reps: 5 },
   ohp: { id: 'ohp', name: 'Overhead Press', sets: 5, reps: 5 },
-  deadlift: { id: 'deadlift', name: 'Deadlift', sets: 1, reps: 5 },
+  deadlift: { id: 'deadlift', name: 'Deadlift', sets: 3, reps: 5 },
 };
 
 export const ALL_EXERCISE_IDS: ExerciseId[] = ['squat', 'bench', 'row', 'ohp', 'deadlift'];
