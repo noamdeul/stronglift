@@ -35,7 +35,7 @@ describe('buildSessionFromTemplate', () => {
     const squat = session.exercises.find((e) => e.exerciseId === 'squat')!;
     const deadlift = session.exercises.find((e) => e.exerciseId === 'deadlift')!;
     expect(squat.workSets).toHaveLength(5);
-    expect(deadlift.workSets).toHaveLength(1);
+    expect(deadlift.workSets).toHaveLength(3);
   });
 
   it('uses each exercise current weight as the work-set weight', () => {
