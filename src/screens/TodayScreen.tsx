@@ -51,6 +51,7 @@ export function TodayScreen() {
   const session = useAppStore((s) => s.currentSession);
   const lastFinished = useAppStore((s) => s.lastFinished);
   const nextType = useAppStore((s) => s.nextWorkoutType);
+  const history = useAppStore((s) => s.history);
   const settings = useAppStore((s) => s.settings);
   const customExercises = useAppStore((s) => s.customExercises);
   const customWorkouts = useAppStore((s) => s.customWorkouts);
@@ -118,9 +119,11 @@ export function TodayScreen() {
   }
 
   if (!session) {
+    // A session already completed today consumes today's slot in the schedule.
+    const lastWorkout = history.length > 0 ? new Date(history[history.length - 1].date) : null;
     const upcoming =
       settings.workoutDays.length > 0
-        ? upcomingWorkouts(settings.workoutDays, nextType, new Date(), 4)
+        ? upcomingWorkouts(settings.workoutDays, nextType, new Date(), 4, lastWorkout)
         : [];
     return (
       <>

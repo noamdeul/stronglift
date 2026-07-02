@@ -43,4 +43,30 @@ describe('upcomingWorkouts', () => {
     const result = upcomingWorkouts([0, 1, 2, 3, 4, 5, 6], 'A', new Date(2026, 5, 28), 3);
     expect(result).toHaveLength(3);
   });
+
+  it('skips today when a workout was already completed today', () => {
+    // 2026-06-29 is a Monday; Mon/Wed/Fri selected, workout done Monday morning.
+    const result = upcomingWorkouts(
+      [1, 3, 5],
+      'B',
+      new Date(2026, 5, 29, 18, 0),
+      2,
+      new Date(2026, 5, 29, 9, 30),
+    );
+    expect(iso(result[0].date)).toBe('2026-07-01'); // Wednesday, not today
+    expect(result[0].type).toBe('B');
+    expect(iso(result[1].date)).toBe('2026-07-03');
+  });
+
+  it('still includes today when the last workout was on an earlier day', () => {
+    // Last workout Saturday 2026-06-27; Monday 06-29 stays scheduled.
+    const result = upcomingWorkouts(
+      [1],
+      'B',
+      new Date(2026, 5, 29),
+      1,
+      new Date(2026, 5, 27, 19, 0),
+    );
+    expect(iso(result[0].date)).toBe('2026-06-29');
+  });
 });
