@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import { KEEP_AWAKE_MP4 } from './keepAwakeVideo';
 
 /**
- * Keeps the mobile screen awake while the app is open. Uses two mechanisms
- * together, because no single one is reliable across phones:
+ * Keeps the mobile screen awake while `enabled` is true (i.e. during an
+ * active workout). Uses two mechanisms together, because no single one is
+ * reliable across phones:
  *
  *  1. The Screen Wake Lock API — the right tool on modern Android Chrome and
  *     desktop. The browser releases the lock whenever the page is hidden, so
@@ -83,18 +84,24 @@ export function useWakeLock(enabled: boolean) {
       }
     };
 
+    // iOS gates autoplay behind a user gesture, and the OS can silently drop
+    // the wake lock while the page stays visible — retry both on any tap.
+    const handleUserGesture = () => {
+      void acquire();
+      playVideo();
+    };
+
     void acquire();
     playVideo();
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    // iOS gates autoplay behind a user gesture; (re)start on any interaction.
-    window.addEventListener('pointerdown', playVideo);
-    window.addEventListener('touchend', playVideo);
+    window.addEventListener('pointerdown', handleUserGesture);
+    window.addEventListener('touchend', handleUserGesture);
 
     return () => {
       cancelled = true;
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pointerdown', playVideo);
-      window.removeEventListener('touchend', playVideo);
+      window.removeEventListener('pointerdown', handleUserGesture);
+      window.removeEventListener('touchend', handleUserGesture);
       void sentinel?.release();
       sentinel = null;
       video.pause();

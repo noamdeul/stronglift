@@ -16,7 +16,8 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('today');
   const { needRefresh, update, dismiss } = usePwaUpdate();
   const keepScreenAwake = useAppStore((s) => s.settings.keepScreenAwake);
-  useWakeLock(keepScreenAwake);
+  const workoutActive = useAppStore((s) => s.currentSession != null);
+  useWakeLock(keepScreenAwake && workoutActive);
 
   return (
     <div className="app">
