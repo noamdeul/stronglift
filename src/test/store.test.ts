@@ -129,6 +129,58 @@ describe('toggleSet', () => {
   });
 });
 
+describe('setExerciseWeight', () => {
+  beforeEach(() => useAppStore.getState().startWorkout());
+
+  it('updates the working weight of a session exercise', () => {
+    useAppStore.getState().setExerciseWeight(0, 60);
+    expect(useAppStore.getState().currentSession!.exercises[0].weight).toBe(60);
+  });
+
+  it('regenerates the warmup ramp while the exercise is untouched', () => {
+    // Squat starts at the bar (20 kg) -> a single bar-only warmup.
+    expect(useAppStore.getState().currentSession!.exercises[0].warmupSets).toHaveLength(1);
+    useAppStore.getState().setExerciseWeight(0, 60);
+    const warmups = useAppStore.getState().currentSession!.exercises[0].warmupSets;
+    // Full ramp: bar, bar, 50%, 70%, 90%.
+    expect(warmups.length).toBeGreaterThan(1);
+    expect(warmups[warmups.length - 1].weight).toBe(55); // 90% of 60, snapped to 2.5
+  });
+
+  it('leaves warmups alone once any set is done', () => {
+    useAppStore.getState().toggleSet(0, 0, true); // complete the bar warmup
+    const before = useAppStore.getState().currentSession!.exercises[0].warmupSets;
+    useAppStore.getState().setExerciseWeight(0, 60);
+    const ex = useAppStore.getState().currentSession!.exercises[0];
+    expect(ex.weight).toBe(60);
+    expect(ex.warmupSets).toEqual(before);
+  });
+
+  it('rejects negative and non-finite weights', () => {
+    useAppStore.getState().setExerciseWeight(0, -10);
+    expect(useAppStore.getState().currentSession!.exercises[0].weight).toBe(BAR_WEIGHT.kg);
+    useAppStore.getState().setExerciseWeight(0, NaN);
+    expect(useAppStore.getState().currentSession!.exercises[0].weight).toBe(BAR_WEIGHT.kg);
+  });
+
+  it('progression on finish advances from the edited weight', () => {
+    useAppStore.getState().setExerciseWeight(0, 60);
+    succeedExercise(0);
+    useAppStore.getState().finishWorkout();
+    // 60 + 2.5 increment, not the pre-edit 20 + 2.5.
+    expect(useAppStore.getState().exerciseStates.squat.currentWeight).toBe(62.5);
+  });
+
+  it('a failed exercise keeps the edited weight for next time', () => {
+    useAppStore.getState().setExerciseWeight(0, 60);
+    // No sets completed -> failure (below the deload threshold).
+    useAppStore.getState().finishWorkout();
+    const squat = useAppStore.getState().exerciseStates.squat;
+    expect(squat.currentWeight).toBe(60);
+    expect(squat.consecutiveFailures).toBe(1);
+  });
+});
+
 describe('warmup customization', () => {
   beforeEach(() => useAppStore.getState().startWorkout());
 

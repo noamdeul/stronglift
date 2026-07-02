@@ -9,6 +9,7 @@ import { makeCustomWorkout, validateCustomWorkout } from '../domain/customWorkou
 import type { CustomWorkoutInput } from '../domain/customWorkouts';
 import { defaultAppState, defaultSettings, SCHEMA_VERSION } from '../domain/defaults';
 import { BAR_WEIGHT, DEFAULT_ROUNDING, PLATE_SIZES, convertWeight } from '../domain/units';
+import { computeWarmups, warmupsToLoggedSets } from '../domain/warmups';
 import type {
   AppState,
   CustomWorkout,
@@ -54,6 +55,9 @@ interface Store extends AppState {
   // Set logging.
   toggleSet: (exerciseIndex: number, setIndex: number, isWarmup: boolean) => void;
   setReps: (exerciseIndex: number, setIndex: number, isWarmup: boolean, reps: number) => void;
+
+  /** Edit an exercise's working weight in the in-progress session. */
+  setExerciseWeight: (exerciseIndex: number, weight: number) => void;
 
   // Warmup customization (per in-progress session).
   setWarmupWeight: (exerciseIndex: number, setIndex: number, weight: number) => void;
@@ -275,14 +279,23 @@ export const useAppStore = create<Store>()(
         const nextStates: Record<ExerciseId, ExerciseState> = { ...exerciseStates };
         for (const logged of currentSession.exercises) {
           const result = resultFromLogged(logged);
+          // Progression advances from the weight actually lifted — the user may
+          // have edited it mid-session. Converted in case the unit was switched
+          // while the session was open (session weights stay in their own unit).
+          const liftedWeight = convertWeight(
+            logged.weight,
+            currentSession.unit,
+            settings.unit,
+            settings.rounding,
+          );
           const prev =
             exerciseStates[logged.exerciseId] ?? {
               exerciseId: logged.exerciseId,
-              currentWeight: logged.weight,
+              currentWeight: liftedWeight,
               consecutiveFailures: 0,
             };
           nextStates[logged.exerciseId] = computeNextState(
-            prev,
+            { ...prev, currentWeight: liftedWeight },
             result,
             config,
             settings.rounding,
@@ -349,6 +362,24 @@ export const useAppStore = create<Store>()(
               : s,
           );
           return { ...ex, [key]: sets };
+        });
+        set({ currentSession: { ...currentSession, exercises } });
+      },
+
+      setExerciseWeight: (exerciseIndex, weight) => {
+        const { currentSession, settings } = get();
+        if (!currentSession || !Number.isFinite(weight) || weight < 0) return;
+        const exercises = currentSession.exercises.map((ex, ei) => {
+          if (ei !== exerciseIndex) return ex;
+          // While the exercise is untouched, regenerate the warmup ramp toward
+          // the new target; once any set is logged, leave the warmups alone.
+          const untouched = ![...ex.warmupSets, ...ex.workSets].some((s) => s.done);
+          const warmupSets = untouched
+            ? warmupsToLoggedSets(
+                computeWarmups(weight, settings.unit, settings.rounding, settings.barWeight),
+              )
+            : ex.warmupSets;
+          return { ...ex, weight, warmupSets };
         });
         set({ currentSession: { ...currentSession, exercises } });
       },

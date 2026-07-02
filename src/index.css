@@ -178,6 +178,15 @@ select {
   font-weight: 700;
   color: var(--accent);
 }
+/* Working weight + its Edit toggle; min-height keeps the card from jumping
+   when the text swaps for the stepper. */
+.weight-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+}
 .plate-load {
   color: var(--text-dim);
   font-size: 0.8rem;
