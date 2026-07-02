@@ -110,7 +110,7 @@ export interface Settings {
   rounding: number;
   /** Play a sound when the rest timer finishes (in addition to vibration). */
   sound: boolean;
-  /** Keep the screen awake (Screen Wake Lock) while the app is open. */
+  /** Keep the screen awake (Screen Wake Lock) while a workout is in progress. */
   keepScreenAwake: boolean;
   /** Weight of the empty barbell, in the active unit. */
   barWeight: number;
